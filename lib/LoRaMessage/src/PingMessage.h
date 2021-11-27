@@ -29,7 +29,7 @@ class PingMessage : public AbstractMessage{
          * @param latitude 
          * @param longitude 
          */
-		PingMessage(const int recipientId, const int senderId, const int messageId, const int timestamp, const float latitude, const float longitude);
+	PingMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const float latitude, const float longitude);
 
         int sendPacket();
 

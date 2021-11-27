@@ -23,7 +23,7 @@ class PingACK : public AbstractACK {
          * @param messageId 
          * @param timestamp 
          */
-		PingACK(const int recipientId, const int senderId, const int messageId, const int timestamp);
+	PingACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 
         int sendPacket();
 

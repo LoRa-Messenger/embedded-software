@@ -9,7 +9,7 @@
 
 using namespace std;
 
-ReadACK::ReadACK(const int recipientId, const int senderId, const int messageId, const int timestamp) : AbstractACK(recipientId, senderId, messageId, timestamp) {}
+ReadACK::ReadACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp) : AbstractACK(recipientId, senderId, messageId, timestamp) {}
 
 int ReadACK::sendPacket() {
     // TODO

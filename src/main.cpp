@@ -38,7 +38,7 @@ void loop() {
 *   - RF_PACONFIG_PASELECT_PABOOST -- LoRa single output via PABOOST, maximum output 20dBm
 *   - RF_PACONFIG_PASELECT_RFO     -- LoRa single output via RFO_HF / RFO_LF, maximum output 14dBm
 */
-  LoRa.setTxPower(14,RF_PACONFIG_PASELECT_PABOOST);
+  LoRa.setTxPower(17, RF_PACONFIG_PASELECT_PABOOST);
   LoRa.print("hello ");
   LoRa.print(counter);
   LoRa.endPacket();
@@ -64,9 +64,9 @@ void onReceive(int packetSize) {
 
   // first byte contains recipientId, senderId, and messageType
   buf[0] = LoRa.read();
-  byte recipientId = (byte) ((buf && 0xE0) >> 0x05);
-  byte senderId = (byte) ((buf && 0x1C) >> 0x02);
-  byte messageType = (byte) (buf && 0x03);
+  byte recipientId = (byte) ((buf[0] && 0xE0) >> 0x05);
+  byte senderId = (byte) ((buf[0] && 0x1C) >> 0x02);
+  byte messageType = (byte) (buf[0] && 0x03);
   
   if (recipientId != deviceId) return; // if not the intended recipient, return
 

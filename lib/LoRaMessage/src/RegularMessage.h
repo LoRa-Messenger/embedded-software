@@ -16,7 +16,7 @@ using namespace std;
 class RegularMessage : public AbstractMessage{
 	
 	protected:
-		string message;
+		String message;
 	
 	public:
 		/**
@@ -28,7 +28,7 @@ class RegularMessage : public AbstractMessage{
 		 * @param timestamp 
 		 * @param message 
 		 */
-		RegularMessage(const int recipientId, const int senderId, const int messageId, const int timestamp, const string message);
+		RegularMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const String message);
 
         int sendPacket();
 

@@ -9,7 +9,7 @@
 
 using namespace std;
 
-PingMessage::PingMessage(const int recipientId, const int senderId, const int messageId, const int timestamp, const float latitude, const float longitude) : AbstractMessage(recipientId, senderId, messageId, timestamp) {
+PingMessage::PingMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const float latitude, const float longitude) : AbstractMessage(recipientId, senderId, messageId, timestamp) {
   this->latitude = latitude;
   this->longitude = longitude;  
 }

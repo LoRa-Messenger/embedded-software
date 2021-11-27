@@ -23,7 +23,7 @@ class ReceivedACK : public AbstractACK {
          * @param messageId 
          * @param timestamp 
          */
-		ReceivedACK(const int recipientId, const int senderId, const int messageId, const int timestamp);
+	ReceivedACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 
         int sendPacket();
 

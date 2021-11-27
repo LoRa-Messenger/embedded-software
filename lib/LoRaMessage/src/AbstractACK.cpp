@@ -8,4 +8,4 @@
 
 using namespace std;
 
-AbstractACK::AbstractACK(const int recipientId, const int senderId, const int messageId, const int timestamp) : AbstractMessage(recipientId, senderId, messageId, timestamp) {}
+AbstractACK::AbstractACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp) : AbstractMessage(recipientId, senderId, messageId, timestamp) {}

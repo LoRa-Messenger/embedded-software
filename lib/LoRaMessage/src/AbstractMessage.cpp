@@ -8,7 +8,7 @@
 
 using namespace std;
 
-AbstractMessage::AbstractMessage(const int recipientId, const int senderId, const int messageId, const int timestamp) {
+AbstractMessage::AbstractMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp) {
   this->recipientId = recipientId;
   this->senderId = senderId;
   this->messageId = messageId;

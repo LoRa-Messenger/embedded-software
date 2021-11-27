@@ -8,6 +8,8 @@
 #endif
 #endif
 
+#include <Arduino.h>
+
 using namespace std;
 
 class AbstractMessage {
@@ -27,7 +29,7 @@ class AbstractMessage {
 		 * @param messageId 
 		 * @param timestamp 
 		 */
-		AbstractMessage(const int recipientId, const int senderId, const int messageId, const int timestamp);
+		AbstractMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 		
 		/**
 		 * @brief 

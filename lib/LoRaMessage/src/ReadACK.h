@@ -23,7 +23,7 @@ class ReadACK : public AbstractACK {
          * @param messageId 
          * @param timestamp 
          */
-		ReadACK(const int recipientId, const int senderId, const int messageId, const int timestamp);
+	ReadACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 
         int sendPacket();
 

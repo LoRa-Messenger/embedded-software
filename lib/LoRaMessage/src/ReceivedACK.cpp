@@ -9,7 +9,7 @@
 
 using namespace std;
 
-ReceivedACK::ReceivedACK(const int recipientId, const int senderId, const int messageId, const int timestamp) : AbstractACK(recipientId, senderId, messageId, timestamp) {}
+ReceivedACK::ReceivedACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp) : AbstractACK(recipientId, senderId, messageId, timestamp) {}
 
 int ReceivedACK::sendPacket() {
     // TODO

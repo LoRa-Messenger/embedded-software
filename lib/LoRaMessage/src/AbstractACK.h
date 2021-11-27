@@ -23,7 +23,7 @@ class AbstractACK : public AbstractMessage{
          * @param messageId 
          * @param timestamp 
          */
-		AbstractACK(const int recipientId, const int senderId, const int messageId, const int timestamp);
+		AbstractACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 
         virtual int sendPacket() = 0;
 
