@@ -8,8 +8,6 @@
 #include <AbstractMessage.h>
 #include "heltec.h"
 
-#define REGULAR_MESSAGE 0x00
-
 using namespace std;
 
 RegularMessage::RegularMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const String message) : AbstractMessage(recipientId, senderId, messageId, timestamp) {
@@ -46,7 +44,7 @@ int RegularMessage::sendPacket() {
   // ~~~~~~~~~~~~
 
   // TODO: check for valid message length somewhere?
-  LoRa.print(this->message);
+  LoRa.print(message);
 
   LoRa.endPacket();
 }
