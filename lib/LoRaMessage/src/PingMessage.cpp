@@ -59,5 +59,5 @@ int PingMessage::sendPacket() {
 
   LoRa.write(body, 8);
 
-  LoRa.endPacket();
+  return LoRa.endPacket();
 }

@@ -45,5 +45,5 @@ int RegularMessage::sendPacket() {
   // TODO: check for valid message length somewhere?
   LoRa.print(message);
 
-  LoRa.endPacket();
+  return LoRa.endPacket();
 }

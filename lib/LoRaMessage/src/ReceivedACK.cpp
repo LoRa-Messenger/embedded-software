@@ -36,5 +36,5 @@ int ReceivedACK::sendPacket() {
 
   LoRa.write(header, 8);
 
-  LoRa.endPacket();
+  return LoRa.endPacket();
 }
