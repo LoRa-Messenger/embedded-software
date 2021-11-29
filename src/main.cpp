@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <LoRaMessage.h>
 #include <TimeLib.h>
+#include <CircularBuffer.h>
+
 #include "heltec.h"
 
 #define BAND 915E6 // LoRa frequency band
