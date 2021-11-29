@@ -17,6 +17,8 @@ uint32_t counter = 0; // temporary for testing purposes
 // buffer for reading out incoming message headers
 byte buf[4];
 
+// temporary vars for test LoRa
+// TODO: replace with queue/circular buffer
 bool sendMsgFlag = false;
 bool sendAckFlag = false;
 byte lastSenderId;
@@ -26,14 +28,11 @@ void onButtonPress();
 void onReceive(int packetSize);
 
 void setup() {
-  // TODO:
-  // 1. connect with phone over BLE
-  // 2. initialize all the device IDs (so they are all in agreement as to who is who)
-
-  // TODO: setup button press ISR to transmit LoRa message
+  // setup the pins
   pinMode(BUTTON, INPUT);
   pinMode(LED, OUTPUT);
 
+  // register the pushbutton ISR
   attachInterrupt(digitalPinToInterrupt(BUTTON), onButtonPress, RISING);
 
   // enable OLED display, LoRa, UART serial, and PABOOST; set LoRa frequency band
@@ -48,10 +47,15 @@ void setup() {
 }
 
 void loop() {
-  // TODO:
-  // 1. if button is pressed, send "hello world"
-
   if (sendMsgFlag) {
+    // 1. turn on LED
+    // 2. print to terminal
+    // 3. construct a RegularMessage
+    // 4. transmit the message
+    // 5. return the LoRa radio back into receive mode
+    // 6. increment messageId
+    // 7. turn off LED
+    digitalWrite(LED, HIGH);
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
     RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
@@ -65,10 +69,18 @@ void loop() {
     
     sendMsgFlag = false;
   }
+
   if (sendAckFlag) {
+    // 1. turn on LED
+    // 2. print to terminal
+    // 3. construct a ReceivedACK
+    // 4. transmit the message
+    // 5. return the LoRa radio back into receive mode
+    // 6. turn off LED
+    digitalWrite(LED, HIGH);
     Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
     unsigned long start = millis();
-    ReadACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
+    ReceivedACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
     int status = ack.sendPacket();
     unsigned long end = millis();
     LoRa.receive();
@@ -80,23 +92,13 @@ void loop() {
   }
 }
 
+/**
+ * @brief ISR for button press that will flag for a "hello world" LoRa packet to be sent.
+ * Note that sending the message from the ISR itself takes too long, and thus will cause the system watchdog timer to freak out,
+ * causing the system to crash.
+ */
 void onButtonPress() {
-  // 1. turn on LED
-  // 2. print to terminal
-  // 3. construct a RegularMessage
-  // 4. transmit the message
-  // 5. return the LoRa radio back into receive mode
-  // 6. increment messageId
-  // 7. turn off LED
   sendMsgFlag = true;
-  digitalWrite(LED, HIGH);
-
-  // Serial.printf("[%u]\tSending packet...\n", counter);
-  // RegularMessage message((byte) 0x00, deviceId, counter, (uint32_t) now(), "hello world");
-  // message.sendPacket();
-  // LoRa.receive();
-  // counter++;
-  // digitalWrite(LED, LOW);
 }
 
 /**
@@ -105,7 +107,6 @@ void onButtonPress() {
  * @param packetSize 
  */
 void onReceive(int packetSize) {
-  // Serial.printf("[%u]\tPacket size [%i]\n", packetSize);
   if (packetSize == 0) return; // if there's no packet, return
 
   // ~~~~~~~~~~~~~~
@@ -141,12 +142,8 @@ void onReceive(int packetSize) {
   // ~~~~~~~~~~~~
   
   switch (messageType) {
-    case REGULAR_MESSAGE: // regular message
+    case REGULAR_MESSAGE:
       {
-        // TODO:
-        // 1. read out message
-        // 2. copy message on BLE
-        // 3. send ACK
         String incoming = ""; // payload of packet
 
         while (LoRa.available()) {
@@ -156,25 +153,14 @@ void onReceive(int packetSize) {
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming);
         sendAckFlag = true;
-        digitalWrite(LED, HIGH);
-        // Serial.printf("[%u]\tSending ACK packet...\n", messageId);
-        // ReadACK ack((byte) senderId, deviceId, messageId, (uint32_t) now());
-        // ack.sendPacket();
-        // LoRa.receive();
-        // digitalWrite(LED, LOW);
         break;
       }
 
-    case PING_MESSAGE: // ping
-      // TODO:
-      // 1. read out ping data
-      // 2. copy ping data on BLE
-      // 3. send ACK
+    case PING_MESSAGE:
+      // TODO
       break;
-    case ACK_MESSAGE: // ACK
-      // TODO:
-      // 1. read out ACK type
-      // 2. copy info on BLE, depending on ACK type
+    case ACK_MESSAGE:
+      // TODO
       break;
     default:
       break; // unknown message type
