@@ -17,7 +17,10 @@ uint32_t counter = 0; // temporary for testing purposes
 // buffer for reading out incoming message headers
 byte buf[4];
 
-bool sendFlag = false;
+bool sendMsgFlag = false;
+bool sendAckFlag = false;
+byte lastSenderId;
+uint32_t lastMessageId;
 
 void onButtonPress();
 void onReceive(int packetSize);
@@ -48,7 +51,7 @@ void loop() {
   // TODO:
   // 1. if button is pressed, send "hello world"
 
-  if (sendFlag) {
+  if (sendMsgFlag) {
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
     RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
@@ -60,7 +63,16 @@ void loop() {
     counter++;
     digitalWrite(LED, LOW);
     
-    sendFlag = false;
+    sendMsgFlag = false;
+  }
+  if (sendAckFlag) {
+    Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
+    ReadACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
+    ack.sendPacket();
+    LoRa.receive();
+    digitalWrite(LED, LOW);
+
+    sendAckFlag = false;
   }
 }
 
@@ -72,7 +84,7 @@ void onButtonPress() {
   // 5. return the LoRa radio back into receive mode
   // 6. increment messageId
   // 7. turn off LED
-  sendFlag = true;
+  sendMsgFlag = true;
   digitalWrite(LED, HIGH);
 
   // Serial.printf("[%u]\tSending packet...\n", counter);
@@ -138,13 +150,13 @@ void onReceive(int packetSize) {
         }
 
         Serial.printf("[%u]\tMessage: [%s]\n", messageId, incoming);
-
+        sendAckFlag = true;
         digitalWrite(LED, HIGH);
-        Serial.printf("[%u]\tSending ACK packet...\n", messageId);
-        ReadACK ack((byte) senderId, deviceId, messageId, (uint32_t) now());
-        ack.sendPacket();
-        LoRa.receive();
-        digitalWrite(LED, LOW);
+        // Serial.printf("[%u]\tSending ACK packet...\n", messageId);
+        // ReadACK ack((byte) senderId, deviceId, messageId, (uint32_t) now());
+        // ack.sendPacket();
+        // LoRa.receive();
+        // digitalWrite(LED, LOW);
         break;
       }
 
