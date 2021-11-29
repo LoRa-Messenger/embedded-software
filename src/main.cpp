@@ -54,8 +54,7 @@ void loop() {
   if (sendMsgFlag) {
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
-    String hello = "hello world";
-    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), hello);
+    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
     int status = message.sendPacket();
     unsigned long end = millis();
     LoRa.receive();
