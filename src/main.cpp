@@ -67,9 +67,13 @@ void loop() {
   }
   if (sendAckFlag) {
     Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
+    unsigned long start = millis();
     ReadACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
-    ack.sendPacket();
+    int status = ack.sendPacket();
+    unsigned long end = millis();
     LoRa.receive();
+    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", lastMessageId, end - start);
+    else Serial.printf("[%u]\tFailed to send packet\n", lastMessageId);
     digitalWrite(LED, LOW);
 
     sendAckFlag = false;
