@@ -14,6 +14,7 @@
 #define REGULAR_MESSAGE 0x00
 #define PING_MESSAGE 0x01
 #define ACK_MESSAGE 0x02
+#define BROADCAST_ID 0x00
 
 using namespace std;
 

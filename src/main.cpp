@@ -51,7 +51,7 @@ void loop() {
   if (sendFlag) {
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
-    RegularMessage message((byte) 0x00, deviceId, counter, (uint32_t) now(), "hello world");
+    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
     int status = message.sendPacket();
     unsigned long end = millis();
     LoRa.receive();
@@ -89,6 +89,7 @@ void onButtonPress() {
  * @param packetSize 
  */
 void onReceive(int packetSize) {
+  // Serial.printf("[%u]\tPacket size [%i]\n", packetSize);
   if (packetSize == 0) return; // if there's no packet, return
 
   // ~~~~~~~~~~~~~~
@@ -101,7 +102,7 @@ void onReceive(int packetSize) {
   byte senderId = (byte) ((buf[0] && 0x1C) >> 0x02);
   byte messageType = (byte) (buf[0] && 0x03);
   
-  if (recipientId != deviceId) return; // if not the intended recipient, return
+  if (recipientId != deviceId && recipientId != BROADCAST_ID) return; // if not the intended recipient, return
 
   // next three bytes contain messageId
   for (uint8_t i = 0; i < 3; i++) {
