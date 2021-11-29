@@ -9,6 +9,7 @@
 #endif
 
 #include <Arduino.h>
+#include "heltec.h"
 
 #define REGULAR_MESSAGE 0x00
 #define PING_MESSAGE 0x01
@@ -40,7 +41,7 @@ class AbstractMessage {
 		 * 
 		 * @return int result of the LoRa.endPacket()
 		 */
-    	virtual int sendPacket() = 0;
+    virtual int sendPacket() = 0;
 	
 };
 

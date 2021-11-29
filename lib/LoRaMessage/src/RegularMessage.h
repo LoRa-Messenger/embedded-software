@@ -30,7 +30,7 @@ class RegularMessage : public AbstractMessage{
 		 */
 		RegularMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const String message);
 
-        int sendPacket();
+    int sendPacket();
 
 };
 

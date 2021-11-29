@@ -6,7 +6,6 @@
 
 #include <RegularMessage.h>
 #include <AbstractMessage.h>
-#include "heltec.h"
 
 using namespace std;
 
