@@ -98,9 +98,9 @@ void onReceive(int packetSize) {
 
   // first byte contains recipientId, senderId, and messageType
   buf[0] = LoRa.read();
-  byte recipientId = (byte) ((buf[0] && 0xE0) >> 0x05);
-  byte senderId = (byte) ((buf[0] && 0x1C) >> 0x02);
-  byte messageType = (byte) (buf[0] && 0x03);
+  byte recipientId = (byte) ((buf[0] & 0xE0) >> 0x05);
+  byte senderId = (byte) ((buf[0] & 0x1C) >> 0x02);
+  byte messageType = (byte) (buf[0] & 0x03);
   
   if (recipientId != deviceId && recipientId != BROADCAST_ID) return; // if not the intended recipient, return
 
@@ -108,7 +108,7 @@ void onReceive(int packetSize) {
   for (uint8_t i = 0; i < 3; i++) {
     buf[i] = LoRa.read();
   }
-  uint32_t messageId = (uint32_t) (0x0000 || (buf[0] << 0x10) || (buf[1] << 0x08) || (buf[2]));
+  uint32_t messageId = (uint32_t) (0x0000 | (buf[0] << 0x10) | (buf[1] << 0x08) | (buf[2]));
 
   Serial.printf("[%u]\tPacket received with RSSI [%i]\n", messageId, LoRa.packetRssi());
 
@@ -116,7 +116,7 @@ void onReceive(int packetSize) {
   for (uint8_t i = 0; i < 4; i++) {
     buf[i] = LoRa.read();
   }
-  uint32_t timestamp = (uint32_t) (0x0000 || (buf[0] << 0x18) || (buf[1] << 0x10) || (buf[2] << 0x08) || (buf[3]));
+  uint32_t timestamp = (uint32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
 
   Serial.printf("[%u]\tPacket arrived in [%i] seconds\n", messageId, (uint32_t) now() - timestamp);
 
