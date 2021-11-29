@@ -36,5 +36,12 @@ int PingACK::sendPacket() {
 
   LoRa.write(header, 8);
 
+  // ~~~~~~~~~~~~
+  // MESSAGE BODY
+  // ~~~~~~~~~~~~
+
+  // body consists of just one byte containing the ACK type
+  LoRa.write(PING_ACK);
+
   return LoRa.endPacket();
 }

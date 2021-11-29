@@ -10,6 +10,10 @@
 
 #include <AbstractMessage.h>
 
+#define RECEIVED_ACK 0x00
+#define READ_ACK 0x01
+#define PING_ACK 0x02
+
 using namespace std;
 
 class AbstractACK : public AbstractMessage{

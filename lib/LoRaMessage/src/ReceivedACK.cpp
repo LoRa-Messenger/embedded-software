@@ -36,5 +36,12 @@ int ReceivedACK::sendPacket() {
 
   LoRa.write(header, 8);
 
+  // ~~~~~~~~~~~~
+  // MESSAGE BODY
+  // ~~~~~~~~~~~~
+
+  // body consists of just one byte containing the ACK type
+  LoRa.write(RECEIVED_ACK);
+
   return LoRa.endPacket();
 }
