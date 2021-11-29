@@ -52,10 +52,11 @@ void loop() {
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
     RegularMessage message((byte) 0x00, deviceId, counter, (uint32_t) now(), "hello world");
-    message.sendPacket();
+    int status = message.sendPacket();
     unsigned long end = millis();
     LoRa.receive();
-    Serial.printf("[%u]\tSent packet in [%u] ms\n", counter, end - start);
+    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", counter, end - start);
+    else Serial.printf("[%u]\tFailed to send packet\n", counter);
     counter++;
     digitalWrite(LED, LOW);
     
