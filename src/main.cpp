@@ -54,7 +54,8 @@ void loop() {
   if (sendMsgFlag) {
     Serial.printf("[%u]\tSending packet...\n", counter);
     unsigned long start = millis();
-    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
+    String hello = "hello world";
+    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), hello);
     int status = message.sendPacket();
     unsigned long end = millis();
     LoRa.receive();
@@ -149,7 +150,8 @@ void onReceive(int packetSize) {
           incoming += (char)LoRa.read(); // add bytes one by one
         }
 
-        Serial.printf("[%u]\tMessage: [%s]\n", messageId, incoming);
+        Serial.printf("[%u]\tMessage: ", messageId);
+        Serial.println(incoming);
         sendAckFlag = true;
         digitalWrite(LED, HIGH);
         // Serial.printf("[%u]\tSending ACK packet...\n", messageId);
