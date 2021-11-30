@@ -15,18 +15,18 @@ AbstractMessage::AbstractMessage(const byte recipientId, const byte senderId, co
   this->timestamp = timestamp;  
 }
 
-byte AbstractMessage::getRecipientId() {
+int AbstractMessage::getRecipientId() {
   return this->recipientId;
 }
 
-byte AbstractMessage::getSenderId() {
+int AbstractMessage::getSenderId() {
   return this->senderId;
 }
 
-uint32_t AbstractMessage::getMessageId() {
+int AbstractMessage::getMessageId() {
   return this->messageId;
 }
 
-uint32_t AbstractMessage::getTimestamp() {
+int AbstractMessage::getTimestamp() {
   return this->timestamp;
 }

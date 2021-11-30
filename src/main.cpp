@@ -86,7 +86,6 @@ void onButtonPress() {
  * @param packetSize 
  */
 void onReceive(int packetSize) {
-  Serial.println("onReceive" + packetSize);
   if (packetSize == 0) return; // if there's no packet, return
 
   // ~~~~~~~~~~~~~~

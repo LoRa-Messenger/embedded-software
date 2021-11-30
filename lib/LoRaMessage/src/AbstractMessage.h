@@ -44,10 +44,10 @@ class AbstractMessage {
 		 */
     virtual int sendPacket() = 0;
 
-    byte getRecipientId();
-    byte getSenderId();
-    uint32_t getMessageId();
-    uint32_t getTimestamp();
+    int getRecipientId();
+    int getSenderId();
+    int getMessageId();
+    int getTimestamp();
 	
 };
 
