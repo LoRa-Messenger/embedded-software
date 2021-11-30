@@ -21,10 +21,10 @@ using namespace std;
 class AbstractMessage {
 	
 	protected:
-		int recipientId;
-		int senderId;
-		int messageId;
-		int timestamp;
+		byte recipientId;
+		byte senderId;
+		uint32_t messageId;
+		uint32_t timestamp;
 	
 	public:
 		/**
@@ -43,6 +43,11 @@ class AbstractMessage {
 		 * @return int result of the LoRa.endPacket()
 		 */
     virtual int sendPacket() = 0;
+
+    byte getRecipientId();
+    byte getSenderId();
+    uint32_t getMessageId();
+    uint32_t getTimestamp();
 	
 };
 

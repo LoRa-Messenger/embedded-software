@@ -62,3 +62,11 @@ int PingMessage::sendPacket() {
 
   return LoRa.endPacket();
 }
+
+float PingMessage::getLatitude() {
+  return this->latitude;
+}
+
+float PingMessage::getLongitude() {
+  return this->longitude;
+}

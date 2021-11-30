@@ -11,6 +11,8 @@
 #define BUTTON 0
 #define LED 25
 
+#define QUEUE_LEN 10
+
 // ID of this device to compare with recipientId for incoming messages
 byte deviceId = 0x01; // temporary for testing purposes
 
@@ -25,6 +27,12 @@ bool sendMsgFlag = false;
 bool sendAckFlag = false;
 byte lastSenderId;
 uint32_t lastMessageId;
+
+// use circular buffers to act as queues:
+// one for outgoing messages to be sent via LoRa
+// one for outgoing messages to be sent via BLE
+CircularBuffer<AbstractMessage*, QUEUE_LEN> LoRaQueue;
+CircularBuffer<AbstractMessage*, QUEUE_LEN> BLEQueue;
 
 void onButtonPress();
 void onReceive(int packetSize);
@@ -49,49 +57,67 @@ void setup() {
 }
 
 void loop() {
-  if (sendMsgFlag) {
-    // 1. turn on LED
-    // 2. print to terminal
-    // 3. construct a RegularMessage
-    // 4. transmit the message
-    // 5. return the LoRa radio back into receive mode
-    // 6. increment messageId
-    // 7. turn off LED
+  // process first LoRa message in queue
+  if (!LoRaQueue.isEmpty()) {
+    AbstractMessage *message = LoRaQueue.shift();
+
     digitalWrite(LED, HIGH);
-    Serial.printf("[%u]\tSending packet...\n", counter);
+    Serial.printf("[%u]\tSending packet...\n", message->getMessageId());
+
     unsigned long start = millis();
-    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
-    int status = message.sendPacket();
-    unsigned long end = millis();
-    LoRa.receive();
-    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", counter, end - start);
-    else Serial.printf("[%u]\tFailed to send packet\n", counter);
-    counter++;
+    if (message->sendPacket()) {
+      unsigned long end = millis();
+      Serial.printf("[%u]\tPacket sent in [%u] ms\n", message->getMessageId(), end - start);
+    } else {
+      Serial.printf("[%u]\tFailed to send packet\n", message->getMessageId());
+    }
+
     digitalWrite(LED, LOW);
+  }
+  
+  // if (sendMsgFlag) {
+  //   // 1. turn on LED
+  //   // 2. print to terminal
+  //   // 3. construct a RegularMessage
+  //   // 4. transmit the message
+  //   // 5. return the LoRa radio back into receive mode
+  //   // 6. increment messageId
+  //   // 7. turn off LED
+  //   // digitalWrite(LED, HIGH);
+  //   // Serial.printf("[%u]\tSending packet...\n", counter);
+  //   // unsigned long start = millis();
+  //   // RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
+  //   // int status = message.sendPacket();
+  //   // unsigned long end = millis();
+  //   // LoRa.receive();
+  //   // if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", counter, end - start);
+  //   // else Serial.printf("[%u]\tFailed to send packet\n", counter);
+  //   // counter++;
+  //   // digitalWrite(LED, LOW);
     
-    sendMsgFlag = false;
-  }
+  //   // sendMsgFlag = false;
+  // }
 
-  if (sendAckFlag) {
-    // 1. turn on LED
-    // 2. print to terminal
-    // 3. construct a ReceivedACK
-    // 4. transmit the message
-    // 5. return the LoRa radio back into receive mode
-    // 6. turn off LED
-    digitalWrite(LED, HIGH);
-    Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
-    unsigned long start = millis();
-    ReceivedACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
-    int status = ack.sendPacket();
-    unsigned long end = millis();
-    LoRa.receive();
-    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", lastMessageId, end - start);
-    else Serial.printf("[%u]\tFailed to send packet\n", lastMessageId);
-    digitalWrite(LED, LOW);
+  // if (sendAckFlag) {
+  //   // 1. turn on LED
+  //   // 2. print to terminal
+  //   // 3. construct a ReceivedACK
+  //   // 4. transmit the message
+  //   // 5. return the LoRa radio back into receive mode
+  //   // 6. turn off LED
+  //   digitalWrite(LED, HIGH);
+  //   Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
+  //   unsigned long start = millis();
+  //   ReceivedACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
+  //   int status = ack.sendPacket();
+  //   unsigned long end = millis();
+  //   LoRa.receive();
+  //   if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", lastMessageId, end - start);
+  //   else Serial.printf("[%u]\tFailed to send packet\n", lastMessageId);
+  //   digitalWrite(LED, LOW);
 
-    sendAckFlag = false;
-  }
+  //   sendAckFlag = false;
+  // }
 }
 
 /**
@@ -100,7 +126,12 @@ void loop() {
  * causing the system to crash.
  */
 void onButtonPress() {
-  sendMsgFlag = true;
+  // sendMsgFlag = true;
+
+  RegularMessage packet((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
+  LoRaQueue.push(&packet);
+  counter++;
+
 }
 
 /**
@@ -153,8 +184,12 @@ void onReceive(int packetSize) {
         }
 
         Serial.printf("[%u]\tMessage: ", messageId);
-        Serial.println(incoming);
-        sendAckFlag = true;
+        Serial.println("[" + incoming + "]");
+
+        ReceivedACK packet(senderId, deviceId, messageId, (uint32_t) now());
+        LoRaQueue.push(&packet);
+        
+        // sendAckFlag = true;
         break;
       }
 

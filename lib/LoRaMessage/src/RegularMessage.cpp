@@ -47,3 +47,7 @@ int RegularMessage::sendPacket() {
 
   return LoRa.endPacket();
 }
+
+String RegularMessage::getMessage() {
+  return this->message;
+}

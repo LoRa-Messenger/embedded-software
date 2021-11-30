@@ -19,19 +19,22 @@ class PingMessage : public AbstractMessage{
     float longitude;
 	
 	public:
-  /**
-   * @brief Construct a new Ping Message object
-   * 
-   * @param recipientId 
-   * @param senderId 
-   * @param messageId 
-   * @param timestamp 
-   * @param latitude 
-   * @param longitude 
-   */
-	PingMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const float latitude, const float longitude);
+    /**
+     * @brief Construct a new Ping Message object
+     * 
+     * @param recipientId 
+     * @param senderId 
+     * @param messageId 
+     * @param timestamp 
+     * @param latitude 
+     * @param longitude 
+     */
+    PingMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const float latitude, const float longitude);
 
-  int sendPacket();
+    int sendPacket();
+
+    float getLatitude();
+    float getLongitude();
 
 };
 
