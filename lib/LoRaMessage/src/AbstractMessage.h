@@ -21,10 +21,10 @@ using namespace std;
 class AbstractMessage {
 	
 	protected:
-		byte recipientId;
-		byte senderId;
-		uint32_t messageId;
-		uint32_t timestamp;
+		int recipientId;
+		int senderId;
+		int messageId;
+		int timestamp;
 	
 	public:
 		/**
