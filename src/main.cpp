@@ -52,21 +52,23 @@ void setup() {
 void loop() {
   // process first LoRa message in queue
   if (!LoRaQueue.isEmpty()) {
-    AbstractMessage *message = LoRaQueue.shift();
+    AbstractMessage *packet = LoRaQueue.shift();
 
     digitalWrite(LED, HIGH);
-    Serial.printf("[%u]\tSending packet...\n", message->getMessageId());
+    Serial.printf("[%u]\tSending packet...\n", packet->getMessageId());
 
     unsigned long start = millis();
-    if (message->sendPacket()) {
+    if (packet->sendPacket()) {
       unsigned long end = millis();
-      Serial.printf("[%u]\tPacket sent in [%u] ms\n", message->getMessageId(), end - start);
+      Serial.printf("[%u]\tPacket sent in [%u] ms\n", packet->getMessageId(), end - start);
+      delete packet;
     } else {
-      Serial.printf("[%u]\tFailed to send packet\n", message->getMessageId());
+      Serial.printf("[%u]\tFailed to send packet\n", packet->getMessageId());
     }
 
     digitalWrite(LED, LOW);
 
+    // put the LoRa radio back in receive mode
     LoRa.receive();
   }
 }
@@ -77,8 +79,13 @@ void loop() {
  * causing the system to crash.
  */
 void onButtonPress() {
-  RegularMessage packet((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
-  LoRaQueue.push(&packet);
+  String hello = "hello world";
+
+  // needs to use the 'new' operator to dynamically allocate memory,
+  // as we want to add the pointer to a queue of AbstractMessage pointers
+  RegularMessage *packet = new RegularMessage((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), hello);
+  LoRaQueue.push(packet);
+
   counter++;
 }
 
@@ -100,7 +107,8 @@ void onReceive(int packetSize) {
   byte senderId = (byte) ((buf[0] & 0x1C) >> 0x02);
   byte messageType = (byte) (buf[0] & 0x03);
   
-  if (recipientId != deviceId && recipientId != BROADCAST_ID) return; // if not the intended recipient, return
+  // if not the intended recipient, return
+  if (recipientId != deviceId && recipientId != BROADCAST_ID) return;
 
   // next three bytes contain messageId
   for (uint8_t i = 0; i < 3; i++) {
@@ -125,17 +133,21 @@ void onReceive(int packetSize) {
   switch (messageType) {
     case REGULAR_MESSAGE:
       {
-        String incoming = ""; // payload of packet
+        // payload of packet
+        String incoming = "";
 
+        // add bytes one by one
         while (LoRa.available()) {
-          incoming += (char)LoRa.read(); // add bytes one by one
+          incoming += (char) LoRa.read(); 
         }
 
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming);
 
-        ReceivedACK packet(senderId, deviceId, messageId, (uint32_t) now());
-        LoRaQueue.push(&packet);
+        // needs to use the 'new' operator to dynamically allocate memory,
+        // as we want to add the pointer to a queue of AbstractMessage pointers
+        ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
+        LoRaQueue.push(packet);
         break;
       }
 

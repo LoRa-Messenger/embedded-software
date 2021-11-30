@@ -15,17 +15,17 @@ using namespace std;
 class ReceivedACK : public AbstractACK {
 	
 	public:
-  /**
-   * @brief Construct a new Received ACK object
-   * 
-   * @param recipientId 
-   * @param senderId 
-   * @param messageId 
-   * @param timestamp 
-   */
-	ReceivedACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
+        /**
+         * @brief Construct a new Received ACK object
+         * 
+         * @param recipientId 
+         * @param senderId 
+         * @param messageId 
+         * @param timestamp 
+         */
+        ReceivedACK(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp);
 
-  int sendPacket();
+        int sendPacket();
 
 };
 
