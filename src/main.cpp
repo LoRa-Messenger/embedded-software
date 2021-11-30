@@ -7,7 +7,10 @@
 
 #include "heltec.h"
 
-#define BAND 915E6 // LoRa frequency band
+// LoRa frequency band = 915 MHz
+#define BAND 915E6
+
+// pin IDs
 #define BUTTON 0
 #define LED 25
 
@@ -90,12 +93,13 @@ void onButtonPress() {
 }
 
 /**
- * @brief Callback for when LoRa receive event occurs
+ * @brief ISR for when LoRa receive event occurs
  * 
  * @param packetSize 
  */
 void onReceive(int packetSize) {
-  if (packetSize == 0) return; // if there's no packet, return
+  // if there's no packet, return
+  if (packetSize == 0) return;
 
   // ~~~~~~~~~~~~~~
   // MESSAGE HEADER
