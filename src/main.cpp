@@ -3,11 +3,18 @@
 #include <Arduino.h>
 #include <LoRaMessage.h>
 #include <TimeLib.h>
+#include <CircularBuffer.h>
+
 #include "heltec.h"
 
-#define BAND 915E6 // LoRa frequency band
+// LoRa frequency band = 915 MHz
+#define BAND 915E6
+
+// pin IDs
 #define BUTTON 0
 #define LED 25
+
+#define QUEUE_LEN 10
 
 // ID of this device to compare with recipientId for incoming messages
 byte deviceId = 0x01; // temporary for testing purposes
@@ -17,12 +24,11 @@ uint32_t counter = 0; // temporary for testing purposes
 // buffer for reading out incoming message headers
 byte buf[4];
 
-// temporary vars for test LoRa
-// TODO: replace with queue/circular buffer
-bool sendMsgFlag = false;
-bool sendAckFlag = false;
-byte lastSenderId;
-uint32_t lastMessageId;
+// use circular buffers to act as queues:
+// one for outgoing messages to be sent via LoRa
+// one for outgoing messages to be sent via BLE
+CircularBuffer<AbstractMessage*, QUEUE_LEN> LoRaQueue;
+CircularBuffer<AbstractMessage*, QUEUE_LEN> BLEQueue;
 
 void onButtonPress();
 void onReceive(int packetSize);
@@ -47,48 +53,26 @@ void setup() {
 }
 
 void loop() {
-  if (sendMsgFlag) {
-    // 1. turn on LED
-    // 2. print to terminal
-    // 3. construct a RegularMessage
-    // 4. transmit the message
-    // 5. return the LoRa radio back into receive mode
-    // 6. increment messageId
-    // 7. turn off LED
-    digitalWrite(LED, HIGH);
-    Serial.printf("[%u]\tSending packet...\n", counter);
-    unsigned long start = millis();
-    RegularMessage message((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), "hello world");
-    int status = message.sendPacket();
-    unsigned long end = millis();
-    LoRa.receive();
-    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", counter, end - start);
-    else Serial.printf("[%u]\tFailed to send packet\n", counter);
-    counter++;
-    digitalWrite(LED, LOW);
-    
-    sendMsgFlag = false;
-  }
+  // process first LoRa message in queue
+  if (!LoRaQueue.isEmpty()) {
+    AbstractMessage *packet = LoRaQueue.shift();
 
-  if (sendAckFlag) {
-    // 1. turn on LED
-    // 2. print to terminal
-    // 3. construct a ReceivedACK
-    // 4. transmit the message
-    // 5. return the LoRa radio back into receive mode
-    // 6. turn off LED
     digitalWrite(LED, HIGH);
-    Serial.printf("[%u]\tSending ACK packet...\n", lastMessageId);
+    Serial.printf("[%u]\tSending packet...\n", packet->getMessageId());
+
     unsigned long start = millis();
-    ReceivedACK ack((byte) lastSenderId, deviceId, lastMessageId, (uint32_t) now());
-    int status = ack.sendPacket();
-    unsigned long end = millis();
-    LoRa.receive();
-    if (status) Serial.printf("[%u]\tSent packet in [%u] ms\n", lastMessageId, end - start);
-    else Serial.printf("[%u]\tFailed to send packet\n", lastMessageId);
+    if (packet->sendPacket()) {
+      unsigned long end = millis();
+      Serial.printf("[%u]\tPacket sent in [%u] ms\n", packet->getMessageId(), end - start);
+      delete packet;
+    } else {
+      Serial.printf("[%u]\tFailed to send packet\n", packet->getMessageId());
+    }
+
     digitalWrite(LED, LOW);
 
-    sendAckFlag = false;
+    // put the LoRa radio back in receive mode
+    LoRa.receive();
   }
 }
 
@@ -98,16 +82,24 @@ void loop() {
  * causing the system to crash.
  */
 void onButtonPress() {
-  sendMsgFlag = true;
+  String hello = "hello world";
+
+  // needs to use the 'new' operator to dynamically allocate memory,
+  // as we want to add the pointer to a queue of AbstractMessage pointers
+  RegularMessage *packet = new RegularMessage((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), hello);
+  LoRaQueue.push(packet);
+
+  counter++;
 }
 
 /**
- * @brief Callback for when LoRa receive event occurs
+ * @brief ISR for when LoRa receive event occurs
  * 
  * @param packetSize 
  */
 void onReceive(int packetSize) {
-  if (packetSize == 0) return; // if there's no packet, return
+  // if there's no packet, return
+  if (packetSize == 0) return;
 
   // ~~~~~~~~~~~~~~
   // MESSAGE HEADER
@@ -119,7 +111,8 @@ void onReceive(int packetSize) {
   byte senderId = (byte) ((buf[0] & 0x1C) >> 0x02);
   byte messageType = (byte) (buf[0] & 0x03);
   
-  if (recipientId != deviceId && recipientId != BROADCAST_ID) return; // if not the intended recipient, return
+  // if not the intended recipient, return
+  if (recipientId != deviceId && recipientId != BROADCAST_ID) return;
 
   // next three bytes contain messageId
   for (uint8_t i = 0; i < 3; i++) {
@@ -144,15 +137,21 @@ void onReceive(int packetSize) {
   switch (messageType) {
     case REGULAR_MESSAGE:
       {
-        String incoming = ""; // payload of packet
+        // payload of packet
+        String incoming = "";
 
+        // add bytes one by one
         while (LoRa.available()) {
-          incoming += (char)LoRa.read(); // add bytes one by one
+          incoming += (char) LoRa.read(); 
         }
 
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming);
-        sendAckFlag = true;
+
+        // needs to use the 'new' operator to dynamically allocate memory,
+        // as we want to add the pointer to a queue of AbstractMessage pointers
+        ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
+        LoRaQueue.push(packet);
         break;
       }
 
