@@ -32,7 +32,7 @@ class RegularMessage : public AbstractMessage{
 
     int sendPacket();
 
-	String getMessage();
+		String getMessage();
 };
 
 #endif

@@ -66,6 +66,8 @@ void loop() {
     }
 
     digitalWrite(LED, LOW);
+
+    LoRa.receive();
   }
 }
 
@@ -130,12 +132,10 @@ void onReceive(int packetSize) {
         }
 
         Serial.printf("[%u]\tMessage: ", messageId);
-        Serial.println("[" + incoming + "]");
+        Serial.println(incoming);
 
         ReceivedACK packet(senderId, deviceId, messageId, (uint32_t) now());
         LoRaQueue.push(&packet);
-
-        // sendAckFlag = true;
         break;
       }
 
