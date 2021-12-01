@@ -43,6 +43,11 @@ class AbstractMessage {
 		 * @return int result of the LoRa.endPacket()
 		 */
     virtual int sendPacket() = 0;
+
+    int getRecipientId();
+    int getSenderId();
+    int getMessageId();
+    int getTimestamp();
 	
 };
 
