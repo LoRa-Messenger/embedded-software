@@ -285,7 +285,7 @@ void onReceive(int packetSize) {
         LoRaQueue.push(packet);
 
         // Put message on BLE Queue
-        BLEData *data = new BLEData(recipientId, senderId, messageId, (uint32_t) now(), latitude, longitude, incoming);
+        BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude, longitude, incoming);
         BLEQueue.push(data);
 
         break;
