@@ -9,7 +9,7 @@
 
 using namespace std;
 
-RegularMessage::RegularMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const String message) : AbstractMessage(recipientId, senderId, messageId, timestamp) {
+RegularMessage::RegularMessage(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, const std::string message) : AbstractMessage(recipientId, senderId, messageId, timestamp) {
   this->message = message;  
 }
 
@@ -42,11 +42,11 @@ int RegularMessage::sendPacket() {
   // MESSAGE BODY
   // ~~~~~~~~~~~~
 
-  LoRa.print(message);
+  LoRa.print(message.c_str());
 
   return LoRa.endPacket();
 }
 
-String RegularMessage::getMessage() {
+std::string RegularMessage::getMessage() {
   return this->message;
 }
