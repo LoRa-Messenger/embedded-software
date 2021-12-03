@@ -1,16 +1,22 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <Arduino.h>
-#include <LoRaMessage.h>
 #include <TimeLib.h>
 #include <CircularBuffer.h>
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
 #include <TaskScheduler.h>
-
+#include <TinyGPS.h> 
 #include "heltec.h"
+
 #include <BLE.h>
+#include <LoRaMessage.h>
+
+// Set to 0 if GPS module is not connected
+#define GPS_MODULE_PRESENT 1
+#define RX_PIN_FOR_GPS 22
+#define TX_PIN_FOR_GPS 23
 
 // LoRa frequency band = 915 MHz
 #define BAND 915E6
@@ -18,6 +24,7 @@
 //McGill location
 #define DEFAULT_LATITUDE 45506152 // multiplied by 1,000,000
 #define DEFAULT_LONGITUDE -73576416// multiplied by 1,000,000
+#define GPS_DATA_MULTIPLIER 1000000 // 1,000,000
 
 // pin IDs
 #define BUTTON 0
@@ -31,8 +38,12 @@ byte deviceId = 0x01; // temporary for testing purposes
 
 uint32_t counter = 0; // temporary for testing purposes
 
-uint32_t latitude = DEFAULT_LATITUDE; 
-uint32_t longitude = DEFAULT_LONGITUDE;
+//GPS variables
+float lat = 28.5458,lon = 77.1703;
+uint32_t latitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
+uint32_t longitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
+TinyGPS gps; // create gps object 
+bool gps_data_fixed;
 
 // locking bools to avoid queues being processed while receiving BLE or LoRA
 bool isReceivingBLE = false;
@@ -67,12 +78,12 @@ void t3GPSCallback();
 //TODO adjust frequencies 
 Task t1LoRa(1000, TASK_FOREVER, &t1LoRaCallback);
 Task t2BLE(2000, TASK_FOREVER, &t2BLECallback);
-Task t3GPS(10000, TASK_FOREVER, &t3GPSCallback);
+Task t3GPS(5000, TASK_FOREVER, &t3GPSCallback);
 
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE Server!");
- 
+
   //BLE setup
   BLEConfig();
 
@@ -98,14 +109,22 @@ void setup() {
   
   runner.addTask(t1LoRa);
   runner.addTask(t2BLE);
-  runner.addTask(t3GPS);
 
   t1LoRa.enable();
   Serial.println("Enabled t1LoRa task");
   t2BLE.enable();
   Serial.println("Enabled t2BLE task");
-  t3GPS.enable();
-  Serial.println("Enabled t3GPS task");
+
+  //GPS module
+  if(GPS_MODULE_PRESENT){
+    Serial2.begin(9600, SERIAL_8N1, RX_PIN_FOR_GPS, TX_PIN_FOR_GPS);
+    runner.addTask(t3GPS);
+    t3GPS.enable();
+    Serial.println("Enabled t3GPS task");
+  }
+  
+
+
 
   //LoRa
   // register the receive callback
@@ -136,9 +155,7 @@ void t1LoRaCallback(){
                                                 atoi(senCharMesID->getValue().c_str()), 
                                                 (uint32_t) now(),
                                                 senCharText->getValue());
-    Serial.printf("got here0 %u\n");
     LoRaQueue.push(packetSend);
-    Serial.printf("got here1 %u\n");
     toPushBLESendMes = false;
   }
 
@@ -194,9 +211,26 @@ void t2BLECallback(){
  * GPS Thread
  */
 void t3GPSCallback(){
-    Serial.println("Updating GPS data...");
-    //TODO
+  int inByte = 0; //for serial data
+  while(Serial2.available()){ // check for gps data 
+    inByte = Serial2.read();
 
+    //Serial.print((char)inByte); //for debugging
+    if(gps.encode(inByte)){// encode gps data
+      gps_data_fixed = true;
+      gps.f_get_position(&lat,&lon); // get latitude and longitude 
+      Serial.printf("Latitude : %f, Longitude: %f \n",lat,lon);
+      //update our latitude and longitude
+      latitude = (uint32_t)(lat*GPS_DATA_MULTIPLIER);
+      longitude = (uint32_t)(lon*GPS_DATA_MULTIPLIER);
+    }
+    else{
+      gps_data_fixed = false;
+    }
+  }
+  if(!gps_data_fixed){
+    Serial.println("GPS position not fixed yet. Should take less than a minute with clear sky");
+  }
 }
 
 
