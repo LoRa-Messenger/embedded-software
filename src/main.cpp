@@ -18,6 +18,9 @@
 #define RX_PIN_FOR_GPS 22
 #define TX_PIN_FOR_GPS 23
 
+//enable or not the OLED and it's corresponding thread
+#define OLED_ENABLE 1
+
 // LoRa frequency band = 915 MHz
 #define BAND 915E6
 
@@ -32,6 +35,8 @@
 
 #define QUEUE_LEN_BLE   10
 #define QUEUE_LEN_LORA  20
+
+#define LORA_HEADER_SIZE 8
 
 // ID of this device to compare with recipientId for incoming messages
 byte deviceId = 0x01; // temporary for testing purposes
@@ -53,9 +58,17 @@ bool toPushBLESendMes = false;
 // buffer for reading out incoming message headers
 byte buf[4];
 
-String rssi = "RSSI --";
-String packSize = "--";
-String packet ;
+int lastLoRaRSSI = 0;
+int LastLoRapackSize = 0;
+int lastLoRASenderID = 0;
+
+int lastBLERSSI = 0;
+int LastBLEMessageSize = 0;
+
+int LoRaReceivedPacketCounter = 0;
+int LoRaSentPacketCounter = 0;
+int BLEReceivedPacketCounter = 0;
+int BLESentPacketCounter = 0;
 
 Scheduler runner;
 
@@ -65,20 +78,24 @@ Scheduler runner;
 CircularBuffer<AbstractMessage*, QUEUE_LEN_LORA> LoRaQueue;
 CircularBuffer<BLEData*, QUEUE_LEN_BLE> BLEQueue;
 
+
 void onButtonPress();
 void onReceive(int packetSize);
 void LoRaDataOLED();
+void BLEDataOLED();
 
 // Callback methods prototypes
 void t1LoRaCallback();
 void t2BLECallback();
 void t3GPSCallback();
+void t4OLEDCallback();
 
 //Tasks
 //TODO adjust frequencies 
 Task t1LoRa(1000, TASK_FOREVER, &t1LoRaCallback);
 Task t2BLE(2000, TASK_FOREVER, &t2BLECallback);
 Task t3GPS(5000, TASK_FOREVER, &t3GPSCallback);
+Task t4OLED(1000, TASK_FOREVER, &t4OLEDCallback);
 
 void setup() {
   Serial.begin(115200);
@@ -99,9 +116,9 @@ void setup() {
 
   // enable OLED display, LoRa, UART serial, and PABOOST; set LoRa frequency band
   // note that this sets serial baudrate to 115200
-  Heltec.begin(true, true, true, true, BAND);
-  Heltec.display->setFont(ArialMT_Plain_16);
+  Heltec.begin(OLED_ENABLE, true, true, true, BAND);
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+  Heltec.display->setFont(ArialMT_Plain_10);
 
   //Task Scheduler
   runner.init();
@@ -121,6 +138,13 @@ void setup() {
     runner.addTask(t3GPS);
     t3GPS.enable();
     Serial.println("Enabled t3GPS task");
+  }
+
+  //GPS module
+  if(OLED_ENABLE){
+    runner.addTask(t4OLED);
+    t4OLED.enable();
+    Serial.println("Enabled t4OLED task");
   }
   
 
@@ -145,6 +169,7 @@ void loop() {
 void t1LoRaCallback(){
   //if message sent via BLE, put it on the LoRa Queue
   if(toPushBLESendMes){
+    isReceivingBLE = true;
     uint32_t test = atoi(senCharRecID->getValue().c_str());
     uint32_t test2 = atoi(senCharMesID->getValue().c_str());
     Serial.printf("test1 %u\n", test);
@@ -156,7 +181,9 @@ void t1LoRaCallback(){
                                                 (uint32_t) now(),
                                                 senCharText->getValue());
     LoRaQueue.push(packetSend);
+    BLEReceivedPacketCounter++;
     toPushBLESendMes = false;
+    senCharProcessed->setValue("1");
   }
 
   // process first LoRa message in queue
@@ -173,6 +200,7 @@ void t1LoRaCallback(){
       unsigned long start = millis();
       if (packet->sendPacket()) {
         unsigned long end = millis();
+        LoRaSentPacketCounter++;
         Serial.printf("[%u]\tPacket sent in [%u] ms\n", packet->getMessageId(), end - start);
         delete packet;
       } else {
@@ -192,16 +220,18 @@ void t1LoRaCallback(){
  * BLE Queue Thread
  */
 void t2BLECallback(){
-  if(isReceivingBLE){
-    Serial.println("BLE is being received, will wait next cycle to process queue");
+  if(recCharProcessed->getValue() == "0"){
+    Serial.println("BLE data is being processed, will wait next cycle send next item");
   }
   else{
     // process first BLE message in queue
     if (!BLEQueue.isEmpty()) {
       BLEData *data = BLEQueue.shift();
+      recCharProcessed->setValue("0");
       data->updateBLEChars();
       delete data;
       Serial.println("Updated BLE Charac");
+      BLESentPacketCounter++;
     }
   }
   // Serial.println("BLE thread");
@@ -233,6 +263,17 @@ void t3GPSCallback(){
   }
 }
 
+/**
+ * OLED Thread
+ */
+void t4OLEDCallback(){
+  Heltec.display->clear();
+
+  LoRaDataOLED();
+  Heltec.display->drawLine(64,0,64,64); //vertical line in the middle
+  BLEDataOLED();
+}
+
 
 
 /**
@@ -262,6 +303,7 @@ void onReceive(int packetSize) {
   // if there's no packet, return
   if (packetSize == 0) return;
 
+  LoRaReceivedPacketCounter++;
   // ~~~~~~~~~~~~~~
   // MESSAGE HEADER
   // ~~~~~~~~~~~~~~
@@ -272,6 +314,8 @@ void onReceive(int packetSize) {
   byte senderId = (byte) ((buf[0] & 0x1C) >> 0x02);
   byte messageType = (byte) (buf[0] & 0x03);
   
+  lastLoRASenderID = (int)senderId;
+
   // if not the intended recipient, return
   if (recipientId != deviceId && recipientId != BROADCAST_ID){ //TODO check this condition
     Serial.printf("Received LoRa Packet but not this device's recipient ID: %x\n",recipientId);
@@ -284,7 +328,8 @@ void onReceive(int packetSize) {
   }
   uint32_t messageId = (uint32_t) (0x0000 | (buf[0] << 0x10) | (buf[1] << 0x08) | (buf[2]));
 
-  Serial.printf("[%u]\tPacket received with RSSI [%i]\n", messageId, LoRa.packetRssi());
+  lastLoRaRSSI = LoRa.packetRssi();
+  Serial.printf("[%u]\tPacket received with RSSI [%i]\n", messageId, lastLoRaRSSI);
 
   // next four bytes contain timestamp
   for (uint8_t i = 0; i < 4; i++) {
@@ -303,11 +348,15 @@ void onReceive(int packetSize) {
       {
         // payload of packet
         std::string incoming = "";
+        int message_size_bytes = 0;
 
         // add bytes one by one
         while (LoRa.available()) {
-          incoming += (char) LoRa.read(); 
+          incoming += (char) LoRa.read();
+          message_size_bytes++;
         }
+
+        LastLoRapackSize = message_size_bytes + LORA_HEADER_SIZE;
 
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming.c_str());
@@ -338,12 +387,23 @@ void onReceive(int packetSize) {
 }
 
 
-// void LoRaDataOLED(){
-//   Heltec.display->clear();
-//   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
-//   Heltec.display->setFont(ArialMT_Plain_10);
-//   Heltec.display->drawString(0 , 15 , "Received "+ packSize + " bytes");
-//   Heltec.display->drawStringMaxWidth(0 , 26 , 128, packet);
-//   Heltec.display->drawString(0, 0, rssi);  
-//   Heltec.display->display();
-// }
+void LoRaDataOLED(){
+  Heltec.display->drawStringMaxWidth(0, 0, 60, "LoRa"); 
+  Heltec.display->drawStringMaxWidth(0, 13, 60, "RSSI:" + String(lastLoRaRSSI)); 
+  Heltec.display->drawStringMaxWidth(0 , 24 , 60, "bytes:" + String(LastLoRapackSize));
+  Heltec.display->drawStringMaxWidth(0 , 35 , 60, "S ID:" + String(lastLoRASenderID));
+  Heltec.display->drawStringMaxWidth(0 , 46 , 60, "R:" + String(LoRaReceivedPacketCounter) + 
+                                                  " | T:" + String(LoRaSentPacketCounter));
+  Heltec.display->display();
+}
+
+
+void BLEDataOLED(){
+  Heltec.display->drawStringMaxWidth(68, 0, 60, "BLE"); 
+  // Heltec.display->drawStringMaxWidth(68, 13, 60, "RSSI: " + String(lastLoRaRSSI)); 
+  // Heltec.display->drawStringMaxWidth(68 , 24 , 60, "Received "+ String(LastLoRapackSize + " bytes"));
+  // Heltec.display->drawStringMaxWidth(68 , 35 , 60, "Sender ID " + String(lastLoRASenderID));
+  Heltec.display->drawStringMaxWidth(68 , 46 , 60, "R:" + String(BLEReceivedPacketCounter) + 
+                                                  " | T:" + String(BLESentPacketCounter));
+  Heltec.display->display();
+}

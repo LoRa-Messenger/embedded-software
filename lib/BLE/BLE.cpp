@@ -3,8 +3,8 @@
 
 BLEServer *pServer;
 BLEService *sendService, *receiveService;
-BLECharacteristic *recCharSendID, *recCharRecID, *recCharMesID, *recCharTime, *recCharLat, *recCharLong, *recCharText;
-BLECharacteristic *senCharSendID, *senCharRecID, *senCharMesID, *senCharText;
+BLECharacteristic *recCharSendID, *recCharRecID, *recCharMesID, *recCharTime, *recCharLat, *recCharLong, *recCharText, *recCharProcessed;
+BLECharacteristic *senCharSendID, *senCharRecID, *senCharMesID, *senCharText, *senCharProcessed;
 
 //class for queue
 BLEData::BLEData(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, \
@@ -51,23 +51,13 @@ void BLEData::updateBLEChars(){
 
 class MyCharCallback: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacterstic){
-    isReceivingBLE = true;
+    senCharProcessed->setValue("0");
     Serial.println("onWriteCallback");
     std::string valueRec = senCharText->getValue();
     Serial.println(valueRec.c_str());
     std::string valueRec2 = pCharacterstic->getValue();
-    Serial.println(valueRec2.c_str());
-
-    if(1){
-      toPushBLESendMes = true;
-      // needs to use the 'new' operator to dynamically allocate memory,
-      // as we want to add the pointer to a queue of AbstractMessage pointers
-
-    }
-    else{
-      Serial.println("LoRa module was not available for write when bluetooth message was received");
-    }
-    isReceivingBLE = false;
+    Serial.println(valueRec2.c_str()); 
+    toPushBLESendMes = true;
   }
 };
 
@@ -111,6 +101,7 @@ void BLEConfig(){
   senCharRecID = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_REC_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   senCharMesID = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_MES_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   senCharText = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_TEXT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  senCharProcessed = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
 
   //receive characteristics
   recCharSendID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_SEN_ID, BLECharacteristic::PROPERTY_READ |BLECharacteristic::PROPERTY_NOTIFY);
@@ -120,12 +111,14 @@ void BLEConfig(){
   recCharLat = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LAT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   recCharLong = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LONG, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   recCharText = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TEXT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  recCharProcessed = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
 
   //set default values
   senCharSendID->setValue(DEFAULT_ID);
   senCharRecID->setValue(DEFAULT_ID);
   senCharMesID->setValue(DEFAULT_ID);
   senCharText->setValue(DEFAULT_MESS);
+  senCharProcessed->setValue("1");
 
   recCharSendID->setValue(DEFAULT_ID);
   recCharRecID->setValue(DEFAULT_ID);
@@ -133,7 +126,9 @@ void BLEConfig(){
   recCharTime->setValue(DEFAULT_TIME);
   recCharLat->setValue(DEFAULT_LAT);
   recCharLong->setValue(DEFAULT_LONG);
-  recCharText->setValue(DEFAULT_MESS); 
+  recCharText->setValue(DEFAULT_MESS);
+  recCharProcessed->setValue("1");
+
 
   //set callback for message ID
   senCharMesID->setCallbacks(new MyCharCallback());
