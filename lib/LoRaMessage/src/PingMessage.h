@@ -10,6 +10,13 @@
 
 #include <AbstractMessage.h>
 
+/**
+ * @brief For latitude and longitude, floats don't work for bitwise operations easily,
+ * so we multiply them by 1E6 to get 6 decimal places of precision,
+ * then round and cast to signed int, which we can transmit easily.
+ */
+#define GPS_DATA_MULTIPLIER 1000000 // 1,000,000
+
 using namespace std;
 
 class PingMessage : public AbstractMessage{
