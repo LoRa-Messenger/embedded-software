@@ -38,14 +38,15 @@ void BLEData::setText(std::string text) {this->text = text;}
 
 void BLEData::updateBLEChars(){
   //TODO data type conversions need to happen here. convert all to ASCII string
-  recCharSendID->setValue((uint8_t*)this->senderId,1);
-  recCharRecID->setValue((uint8_t*)this->recipientId,1);
+  recCharSendID->setValue((uint32_t&)this->senderId);
+  recCharRecID->setValue((uint32_t&)this->senderId);
   recCharMesID->setValue(this->messageId);
   recCharTime->setValue(this->timestamp);
   recCharLat->setValue(this->latitude);
   recCharLong->setValue(this->longitude);
   recCharText->setValue(this->text);
   recCharMesID->notify();
+  Serial.println("got here0");
 }
 
 
@@ -87,7 +88,7 @@ void BLEAdvertise(){
 }
 
 void BLEConfig(){
-  BLEDevice::init("ESP32-BLE-Server");
+  BLEDevice::init("Juan");
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
   // recServer = BLEDevice::createServer();
@@ -101,7 +102,7 @@ void BLEConfig(){
   senCharRecID = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_REC_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   senCharMesID = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_MES_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   senCharText = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_TEXT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-  senCharProcessed = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  senCharProcessed = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
 
   //receive characteristics
   recCharSendID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_SEN_ID, BLECharacteristic::PROPERTY_READ |BLECharacteristic::PROPERTY_NOTIFY);

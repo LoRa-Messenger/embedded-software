@@ -14,7 +14,7 @@
 #include <LoRaMessage.h>
 
 // Set to 0 if GPS module is not connected
-#define GPS_MODULE_PRESENT 1
+#define GPS_MODULE_PRESENT 0
 #define RX_PIN_FOR_GPS 22
 #define TX_PIN_FOR_GPS 23
 
@@ -220,21 +220,23 @@ void t1LoRaCallback(){
  * BLE Queue Thread
  */
 void t2BLECallback(){
-  if(recCharProcessed->getValue() == "0"){
-    Serial.println("BLE data is being processed, will wait next cycle send next item");
-  }
-  else{
-    // process first BLE message in queue
-    if (!BLEQueue.isEmpty()) {
+  // Serial.print("BLE queue size: ");
+  // Serial.println(BLEQueue.size());
+  
+  // process first BLE message in queue
+  if (!BLEQueue.isEmpty()) {
+    if(recCharProcessed->getValue() == "0"){
+      Serial.println("BLE data is being processed, will wait next cycle send next item");
+    }
+    else{
       BLEData *data = BLEQueue.shift();
       recCharProcessed->setValue("0");
       data->updateBLEChars();
-      delete data;
+      // delete data;
       Serial.println("Updated BLE Charac");
       BLESentPacketCounter++;
     }
   }
-  // Serial.println("BLE thread");
 }
 
 /**
@@ -361,16 +363,15 @@ void onReceive(int packetSize) {
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming.c_str());
 
-        // Put Acknowledge on LoRa Queue
-        // needs to use the 'new' operator to dynamically allocate memory,
-        // as we want to add the pointer to a queue of AbstractMessage pointers
-        ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
-        LoRaQueue.push(packet);
+        // // Put Acknowledge on LoRa Queue
+        // // needs to use the 'new' operator to dynamically allocate memory,
+        // // as we want to add the pointer to a queue of AbstractMessage pointers
+        // ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
+        // LoRaQueue.push(packet);
 
         // Put message on BLE Queue
         BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude, longitude, incoming);
         BLEQueue.push(data);
-
         break;
       }
 
