@@ -44,19 +44,24 @@ int PingMessage::sendPacket() {
   // ~~~~~~~~~~~~
 
   byte body[8];
+
+  // use a pseudo fixed-point representation
+  // where we use only 6 decimal points of precision
+  // and transmit as signed 32-bit integers
+  int32_t latitude_int = (int32_t) (latitude * GPS_DATA_MULTIPLIER);
+  int32_t longitude_int = (int32_t) (longitude * GPS_DATA_MULTIPLIER);
   
-  // TODO: fix the casting as per https://stackoverflow.com/questions/1723575/how-to-perform-a-bitwise-operation-on-floating-point-numbers
   // first four bytes of body come from latitude
-  // body[0] = (byte) (0x00 | ((latitude & 0xFF000000) >> 0x18));
-  // body[1] = (byte) (0x00 | ((latitude & 0x00FF0000) >> 0x10));
-  // body[2] = (byte) (0x00 | ((latitude & 0x0000FF00) >> 0x08));
-  // body[3] = (byte) (0x00 | ((latitude & 0x000000FF)));
+  body[0] = (byte) (0x00 | ((latitude_int & 0xFF000000) >> 0x18));
+  body[1] = (byte) (0x00 | ((latitude_int & 0x00FF0000) >> 0x10));
+  body[2] = (byte) (0x00 | ((latitude_int & 0x0000FF00) >> 0x08));
+  body[3] = (byte) (0x00 | ((latitude_int & 0x000000FF)));
 
   // // next four bytes of body come from longitude
-  // body[4] = (byte) (0x00 | ((longitude & 0xFF000000) >> 0x18));
-  // body[5] = (byte) (0x00 | ((longitude & 0x00FF0000) >> 0x10));
-  // body[6] = (byte) (0x00 | ((longitude & 0x0000FF00) >> 0x08));
-  // body[7] = (byte) (0x00 | ((longitude & 0x000000FF)));
+  body[4] = (byte) (0x00 | ((longitude_int & 0xFF000000) >> 0x18));
+  body[5] = (byte) (0x00 | ((longitude_int & 0x00FF0000) >> 0x10));
+  body[6] = (byte) (0x00 | ((longitude_int & 0x0000FF00) >> 0x08));
+  body[7] = (byte) (0x00 | ((longitude_int & 0x000000FF)));
 
   // LoRa.write(body, 8);
 

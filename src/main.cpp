@@ -27,7 +27,6 @@
 //McGill location
 #define DEFAULT_LATITUDE 45506152 // multiplied by 1,000,000
 #define DEFAULT_LONGITUDE -73576416// multiplied by 1,000,000
-#define GPS_DATA_MULTIPLIER 1000000 // 1,000,000
 
 // pin IDs
 #define BUTTON 0
@@ -45,8 +44,8 @@ uint32_t counter = 0; // temporary for testing purposes
 
 //GPS variables
 float lat = 28.5458,lon = 77.1703;
-uint32_t latitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
-uint32_t longitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
+uint32_t deviceLatitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
+uint32_t deviceLongitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
 TinyGPS gps; // create gps object 
 bool gps_data_fixed;
 
@@ -67,6 +66,7 @@ int LastBLEMessageSize = 0;
 
 int LoRaReceivedPacketCounter = 0;
 int LoRaSentPacketCounter = 0;
+int LoRaPingCounter = 0;
 int BLEReceivedPacketCounter = 0;
 int BLESentPacketCounter = 0;
 
@@ -89,13 +89,15 @@ void t1LoRaCallback();
 void t2BLECallback();
 void t3GPSCallback();
 void t4OLEDCallback();
+void t5PingCallback();
 
 //Tasks
 //TODO adjust frequencies 
 Task t1LoRa(1000, TASK_FOREVER, &t1LoRaCallback);
 Task t2BLE(2000, TASK_FOREVER, &t2BLECallback);
-Task t3GPS(5000, TASK_FOREVER, &t3GPSCallback);
+Task t3GPS(15000, TASK_FOREVER, &t3GPSCallback);
 Task t4OLED(1000, TASK_FOREVER, &t4OLEDCallback);
+Task t5Ping(60000, TASK_FOREVER, &t5PingCallback);
 
 void setup() {
   Serial.begin(115200);
@@ -140,15 +142,16 @@ void setup() {
     Serial.println("Enabled t3GPS task");
   }
 
-  //GPS module
+  //OLED display
   if(OLED_ENABLE){
     runner.addTask(t4OLED);
     t4OLED.enable();
     Serial.println("Enabled t4OLED task");
   }
-  
 
-
+  runner.addTask(t5Ping);
+  t5Ping.enable();
+  Serial.println("Enabled t5Ping task");
 
   //LoRa
   // register the receive callback
@@ -253,8 +256,8 @@ void t3GPSCallback(){
       gps.f_get_position(&lat,&lon); // get latitude and longitude 
       Serial.printf("Latitude : %f, Longitude: %f \n",lat,lon);
       //update our latitude and longitude
-      latitude = (uint32_t)(lat*GPS_DATA_MULTIPLIER);
-      longitude = (uint32_t)(lon*GPS_DATA_MULTIPLIER);
+      deviceLatitude = (uint32_t)(lat*GPS_DATA_MULTIPLIER);
+      deviceLongitude = (uint32_t)(lon*GPS_DATA_MULTIPLIER);
     }
     else{
       gps_data_fixed = false;
@@ -276,7 +279,14 @@ void t4OLEDCallback(){
   BLEDataOLED();
 }
 
-
+/**
+ * @brief Task for pinging all devices in network
+ */
+void t5PingCallback() {
+  PingMessage *packet = new PingMessage(BROADCAST_ID, deviceId, LoRaPingCounter, (uint32_t) now(), deviceLatitude, deviceLongitude);
+  LoRaQueue.push(packet);
+  LoRaPingCounter++;
+}
 
 /**
  * @brief ISR for button press that will flag for a "hello world" LoRa packet to be sent.
@@ -370,14 +380,42 @@ void onReceive(int packetSize) {
         // LoRaQueue.push(packet);
 
         // Put message on BLE Queue
-        BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude, longitude, incoming);
+        BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, deviceLatitude, deviceLongitude, incoming);
         BLEQueue.push(data);
         break;
       }
 
     case PING_MESSAGE:
-      // TODO
-      break;
+      {
+        // next four bytes contain latitude
+        for (uint8_t i = 0; i < 4; i++) {
+          buf[i] = LoRa.read();
+        }
+        int32_t latitude_int = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
+        float latitude = (float) latitude_int / GPS_DATA_MULTIPLIER;
+
+        // next four bytes contain longitude
+        for (uint8_t i = 0; i < 4; i++) {
+          buf[i] = LoRa.read();
+        }
+        int32_t longitude_int = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
+        float longitude = (float) longitude_int / GPS_DATA_MULTIPLIER;
+
+        Serial.printf("[%u]\tLatitude: [%f], Longitude: [%f]\n", messageId, latitude, longitude);
+
+        // Put Acknowledge on LoRa Queue
+        // needs to use the 'new' operator to dynamically allocate memory,
+        // as we want to add the pointer to a queue of AbstractMessage pointers
+        PingACK *packet = new PingACK(senderId, deviceId, messageId, (uint32_t) now());
+        LoRaQueue.push(packet);
+
+        // TODO: send BLE data
+        // Put message on BLE Queue
+        // BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude_int, longitude_int, "PING");
+        // BLEQueue.push(data);
+        
+        break;
+      }
     case ACK_MESSAGE:
       // TODO
       break;
