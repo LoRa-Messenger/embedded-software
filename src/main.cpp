@@ -95,7 +95,7 @@ void t5PingCallback();
 //TODO adjust frequencies 
 Task t1LoRa(1000, TASK_FOREVER, &t1LoRaCallback);
 Task t2BLE(2000, TASK_FOREVER, &t2BLECallback);
-Task t3GPS(5000, TASK_FOREVER, &t3GPSCallback);
+Task t3GPS(15000, TASK_FOREVER, &t3GPSCallback);
 Task t4OLED(1000, TASK_FOREVER, &t4OLEDCallback);
 Task t5Ping(60000, TASK_FOREVER, &t5PingCallback);
 
@@ -142,15 +142,16 @@ void setup() {
     Serial.println("Enabled t3GPS task");
   }
 
-  //GPS module
+  //OLED display
   if(OLED_ENABLE){
     runner.addTask(t4OLED);
     t4OLED.enable();
     Serial.println("Enabled t4OLED task");
   }
-  
 
-
+  runner.addTask(t5Ping);
+  t5Ping.enable();
+  Serial.println("Enabled t5Ping task");
 
   //LoRa
   // register the receive callback
@@ -408,6 +409,9 @@ void onReceive(int packetSize) {
         LoRaQueue.push(packet);
 
         // TODO: send BLE data
+        // Put message on BLE Queue
+        // BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude_int, longitude_int, "PING");
+        // BLEQueue.push(data);
         
         break;
       }
