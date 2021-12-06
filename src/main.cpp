@@ -44,8 +44,8 @@ uint32_t counter = 0; // temporary for testing purposes
 
 //GPS variables
 float lat = 28.5458,lon = 77.1703;
-uint32_t deviceLatitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
-uint32_t deviceLongitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
+int32_t deviceLatitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
+int32_t deviceLongitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
 TinyGPS gps; // create gps object 
 bool gps_data_fixed;
 
@@ -256,8 +256,8 @@ void t3GPSCallback(){
       gps.f_get_position(&lat,&lon); // get latitude and longitude 
       Serial.printf("Latitude : %f, Longitude: %f \n",lat,lon);
       //update our latitude and longitude
-      deviceLatitude = (uint32_t)(lat*GPS_DATA_MULTIPLIER);
-      deviceLongitude = (uint32_t)(lon*GPS_DATA_MULTIPLIER);
+      deviceLatitude = (int32_t)(lat*GPS_DATA_MULTIPLIER);
+      deviceLongitude = (int32_t)(lon*GPS_DATA_MULTIPLIER);
     }
     else{
       gps_data_fixed = false;
