@@ -51,13 +51,13 @@ int PingMessage::sendPacket() {
   body[2] = (byte) (0x00 | ((latitude & 0x0000FF00) >> 0x08));
   body[3] = (byte) (0x00 | ((latitude & 0x000000FF)));
 
-  // // next four bytes of body come from longitude
+  // next four bytes of body come from longitude
   body[4] = (byte) (0x00 | ((longitude & 0xFF000000) >> 0x18));
   body[5] = (byte) (0x00 | ((longitude & 0x00FF0000) >> 0x10));
   body[6] = (byte) (0x00 | ((longitude & 0x0000FF00) >> 0x08));
   body[7] = (byte) (0x00 | ((longitude & 0x000000FF)));
 
-  // LoRa.write(body, 8);
+  LoRa.write(body, 8);
 
   return LoRa.endPacket();
 }
