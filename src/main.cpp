@@ -373,15 +373,16 @@ void onReceive(int packetSize) {
         Serial.printf("[%u]\tMessage: ", messageId);
         Serial.println(incoming.c_str());
 
-        // // Put Acknowledge on LoRa Queue
-        // // needs to use the 'new' operator to dynamically allocate memory,
-        // // as we want to add the pointer to a queue of AbstractMessage pointers
-        // ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
-        // LoRaQueue.push(packet);
+        // Put Acknowledge on LoRa Queue
+        // needs to use the 'new' operator to dynamically allocate memory,
+        // as we want to add the pointer to a queue of AbstractMessage pointers
+        ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
+        LoRaQueue.push(packet);
 
         // Put message on BLE Queue
         BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, deviceLatitude, deviceLongitude, incoming);
         BLEQueue.push(data);
+
         break;
       }
 
@@ -391,17 +392,17 @@ void onReceive(int packetSize) {
         for (uint8_t i = 0; i < 4; i++) {
           buf[i] = LoRa.read();
         }
-        int32_t latitude_int = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
-        float latitude = (float) latitude_int / GPS_DATA_MULTIPLIER;
+        int32_t latitude = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
+        // float latitude = (float) latitude_int / GPS_DATA_MULTIPLIER;
 
         // next four bytes contain longitude
         for (uint8_t i = 0; i < 4; i++) {
           buf[i] = LoRa.read();
         }
-        int32_t longitude_int = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
-        float longitude = (float) longitude_int / GPS_DATA_MULTIPLIER;
+        int32_t longitude = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
+        // float longitude = (float) longitude_int / GPS_DATA_MULTIPLIER;
 
-        Serial.printf("[%u]\tLatitude: [%f], Longitude: [%f]\n", messageId, latitude, longitude);
+        Serial.printf("[%u]\tLatitude: [%d], Longitude: [%d]\n", messageId, latitude, longitude);
 
         // Put Acknowledge on LoRa Queue
         // needs to use the 'new' operator to dynamically allocate memory,
