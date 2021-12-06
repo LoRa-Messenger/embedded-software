@@ -35,12 +35,8 @@
 #define QUEUE_LEN_BLE   10
 #define QUEUE_LEN_LORA  20
 
-#define LORA_HEADER_SIZE 8
-
 // ID of this device to compare with recipientId for incoming messages
 byte deviceId = 0x01; // temporary for testing purposes
-
-uint32_t counter = 0; // temporary for testing purposes
 
 //GPS variables
 float lat = 28.5458,lon = 77.1703;
@@ -283,9 +279,8 @@ void t4OLEDCallback(){
  * @brief Task for pinging all devices in network
  */
 void t5PingCallback() {
-  PingMessage *packet = new PingMessage(BROADCAST_ID, deviceId, LoRaPingCounter, (uint32_t) now(), deviceLatitude, deviceLongitude);
+  PingMessage *packet = new PingMessage(BROADCAST_ID, deviceId, LoRaSentPacketCounter, (uint32_t) now(), deviceLatitude, deviceLongitude);
   LoRaQueue.push(packet);
-  LoRaPingCounter++;
 }
 
 /**
@@ -298,10 +293,8 @@ void onButtonPress() {
 
   // needs to use the 'new' operator to dynamically allocate memory,
   // as we want to add the pointer to a queue of AbstractMessage pointers
-  RegularMessage *packet = new RegularMessage((byte) BROADCAST_ID, deviceId, counter, (uint32_t) now(), hello);
+  RegularMessage *packet = new RegularMessage((byte) BROADCAST_ID, deviceId, LoRaSentPacketCounter, (uint32_t) now(), hello);
   LoRaQueue.push(packet);
-
-  counter++;
 }
 
 
@@ -374,8 +367,6 @@ void onReceive(int packetSize) {
         Serial.println(incoming.c_str());
 
         // Put Acknowledge on LoRa Queue
-        // needs to use the 'new' operator to dynamically allocate memory,
-        // as we want to add the pointer to a queue of AbstractMessage pointers
         ReceivedACK *packet = new ReceivedACK(senderId, deviceId, messageId, (uint32_t) now());
         LoRaQueue.push(packet);
 
@@ -393,20 +384,16 @@ void onReceive(int packetSize) {
           buf[i] = LoRa.read();
         }
         int32_t latitude = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
-        // float latitude = (float) latitude_int / GPS_DATA_MULTIPLIER;
 
         // next four bytes contain longitude
         for (uint8_t i = 0; i < 4; i++) {
           buf[i] = LoRa.read();
         }
         int32_t longitude = (int32_t) (0x0000 | (buf[0] << 0x18) | (buf[1] << 0x10) | (buf[2] << 0x08) | (buf[3]));
-        // float longitude = (float) longitude_int / GPS_DATA_MULTIPLIER;
 
         Serial.printf("[%u]\tLatitude: [%d], Longitude: [%d]\n", messageId, latitude, longitude);
 
         // Put Acknowledge on LoRa Queue
-        // needs to use the 'new' operator to dynamically allocate memory,
-        // as we want to add the pointer to a queue of AbstractMessage pointers
         PingACK *packet = new PingACK(senderId, deviceId, messageId, (uint32_t) now());
         LoRaQueue.push(packet);
 
@@ -414,6 +401,8 @@ void onReceive(int packetSize) {
         // Put message on BLE Queue
         // BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude_int, longitude_int, "PING");
         // BLEQueue.push(data);
+
+        LastLoRapackSize = LORA_HEADER_SIZE + LORA_PING_BODY_SIZE;
         
         break;
       }

@@ -16,6 +16,7 @@
  * then round and cast to signed int, which we can transmit easily.
  */
 #define GPS_DATA_MULTIPLIER 1000000 // 1,000,000
+#define LORA_PING_BODY_SIZE 8
 
 using namespace std;
 
