@@ -14,6 +14,8 @@
 #define READ_ACK 0x01
 #define PING_ACK 0x02
 
+#define LORA_ACK_BODY_SIZE 1
+
 using namespace std;
 
 class AbstractACK : public AbstractMessage{

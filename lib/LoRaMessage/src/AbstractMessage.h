@@ -16,6 +16,8 @@
 #define ACK_MESSAGE 0x02
 #define BROADCAST_ID 0x00
 
+#define LORA_HEADER_SIZE 8
+
 using namespace std;
 
 class AbstractMessage {
