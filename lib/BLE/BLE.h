@@ -5,7 +5,7 @@
 #include <BLEDevice.h>
 #include <Arduino.h>
 
-#define DEVICE_BLE_NAME "Juan"
+#define DEVICE_BLE_NAME "Kat ID=2"
 
 #define SERVICE_SEND_UUID                 "0f155954-2316-45d0-8791-c18247c6c146"
 #define SERVICE_RECEIVE_UUID              "0f0e363b-2cdb-480b-ab3c-e5e784cf68c8"

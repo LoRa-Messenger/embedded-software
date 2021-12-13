@@ -1,5 +1,6 @@
 #include "BLE.h"
 #include "heltec.h"
+#include <BLE2902.h>
 
 BLEServer *pServer;
 BLEService *sendService, *receiveService;
@@ -38,13 +39,15 @@ void BLEData::setText(std::string text) {this->text = text;}
 
 void BLEData::updateBLEChars(){
   //TODO data type conversions need to happen here. convert all to ASCII string
-  recCharSendID->setValue((uint32_t&)this->senderId);
-  recCharRecID->setValue((uint32_t&)this->senderId);
-  recCharMesID->setValue(this->messageId);
+  uint16_t senderID_uint16 = (0 << 8) | ((uint8_t)this->senderId);
+  recCharSendID->setValue(senderID_uint16);
+  // recCharRecID->setValue((uint32_t&)this->senderId);
   recCharTime->setValue(this->timestamp);
-  recCharLat->setValue(this->latitude);
-  recCharLong->setValue(this->longitude);
+  Serial.printf("Time: %u\n",this->timestamp);
+  // recCharLat->setValue(this->latitude);
+  // recCharLong->setValue(this->longitude);
   recCharText->setValue(this->text);
+  recCharMesID->setValue(this->messageId);
   recCharMesID->notify();
   Serial.println("got here0");
 }
@@ -53,11 +56,11 @@ void BLEData::updateBLEChars(){
 class MyCharCallback: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* pCharacterstic){
     senCharProcessed->setValue("0");
-    Serial.println("onWriteCallback");
-    std::string valueRec = senCharText->getValue();
-    Serial.println(valueRec.c_str());
-    std::string valueRec2 = pCharacterstic->getValue();
-    Serial.println(valueRec2.c_str()); 
+    // Serial.println("onWriteCallback");
+    // std::string valueRec = senCharText->getValue();
+    // Serial.println(valueRec.c_str());
+    // std::string valueRec2 = pCharacterstic->getValue();
+    // Serial.println(valueRec2.c_str()); 
     toPushBLESendMes = true;
   }
 };
@@ -84,11 +87,11 @@ void BLEAdvertise(){
   pAdvertising->setMinPreferred(0x06);  // functions that help with iPhone connections issue
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
-  Serial.println("Characteristic defined! Now you can read it in the Client!");
+  // Serial.println("Characteristic defined! Now you can read it in the Client!");
 }
 
 void BLEConfig(){
-  BLEDevice::init("Juan");
+  BLEDevice::init(DEVICE_BLE_NAME);
   pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
   // recServer = BLEDevice::createServer();
@@ -104,31 +107,33 @@ void BLEConfig(){
   senCharText = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_TEXT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
   senCharProcessed = sendService->createCharacteristic(SEN_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
 
-  //receive characteristics
-  recCharSendID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_SEN_ID, BLECharacteristic::PROPERTY_READ |BLECharacteristic::PROPERTY_NOTIFY);
-  recCharRecID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_REC_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  recCharMesID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_MES_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  recCharTime = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TIME, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  recCharLat = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LAT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  recCharLong = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LONG, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  //receive characteristics 
+  //Some reason max 6 characteristics
   recCharText = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TEXT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   recCharProcessed = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_PROCESSED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+  recCharSendID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_SEN_ID, BLECharacteristic::PROPERTY_READ |BLECharacteristic::PROPERTY_NOTIFY);
+  // recCharRecID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_REC_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  recCharMesID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_MES_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  recCharTime = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TIME, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  // recCharLat = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LAT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  // recCharLong = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LONG, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
 
   //set default values
-  senCharSendID->setValue(DEFAULT_ID);
+  // senCharSendID->setValue(DEFAULT_ID);
   senCharRecID->setValue(DEFAULT_ID);
   senCharMesID->setValue(DEFAULT_ID);
   senCharText->setValue(DEFAULT_MESS);
   senCharProcessed->setValue("1");
 
-  recCharSendID->setValue(DEFAULT_ID);
-  recCharRecID->setValue(DEFAULT_ID);
-  recCharMesID->setValue(DEFAULT_ID);
-  recCharTime->setValue(DEFAULT_TIME);
-  recCharLat->setValue(DEFAULT_LAT);
-  recCharLong->setValue(DEFAULT_LONG);
   recCharText->setValue(DEFAULT_MESS);
   recCharProcessed->setValue("1");
+  recCharSendID->setValue(DEFAULT_ID);
+  // recCharRecID->setValue(DEFAULT_ID);
+  recCharMesID->setValue(DEFAULT_ID);
+  recCharMesID->addDescriptor(new BLE2902());
+  recCharTime->setValue(DEFAULT_TIME);
+  // recCharLat->setValue(DEFAULT_LAT);
+  // recCharLong->setValue(DEFAULT_LONG);
 
 
   //set callback for message ID

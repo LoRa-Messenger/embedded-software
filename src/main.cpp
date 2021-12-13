@@ -39,7 +39,7 @@
 #define LORA_HEADER_SIZE 8
 
 // ID of this device to compare with recipientId for incoming messages
-byte deviceId = 0x01; // temporary for testing purposes
+byte deviceId = 0x02; // temporary for testing purposes
 
 uint32_t counter = 0; // temporary for testing purposes
 
@@ -170,16 +170,23 @@ void t1LoRaCallback(){
   //if message sent via BLE, put it on the LoRa Queue
   if(toPushBLESendMes){
     isReceivingBLE = true;
-    uint32_t test = atoi(senCharRecID->getValue().c_str());
-    uint32_t test2 = atoi(senCharMesID->getValue().c_str());
-    Serial.printf("test1 %u\n", test);
-    Serial.printf("test2 %u\n", test2);
+
+    std::string text = senCharText->getValue();
+    std::string recID = senCharRecID->getValue();
+    std::string mesID = senCharMesID->getValue();
+
+    Serial.print("BLE received: receiver ID: ");
+    Serial.println(atoi(recID.c_str()));
+    Serial.print("BLE received: message ID: ");
+    Serial.println(atoi(mesID.c_str()));
+    Serial.print("BLE received: message text: ");
+    Serial.println(text.c_str());
     //TODO verify the type conversions here
-    RegularMessage *packetSend = new RegularMessage(atoi(senCharRecID->getValue().c_str()), 
-                                                atoi(senCharRecID->getValue().c_str()), 
-                                                atoi(senCharMesID->getValue().c_str()), 
+    RegularMessage *packetSend = new RegularMessage(atoi(recID.c_str()), 
+                                                deviceId, 
+                                                atoi(mesID.c_str()), 
                                                 (uint32_t) now(),
-                                                senCharText->getValue());
+                                                text);
     LoRaQueue.push(packetSend);
     BLEReceivedPacketCounter++;
     toPushBLESendMes = false;
@@ -222,7 +229,7 @@ void t1LoRaCallback(){
 void t2BLECallback(){
   // Serial.print("BLE queue size: ");
   // Serial.println(BLEQueue.size());
-  
+
   // process first BLE message in queue
   if (!BLEQueue.isEmpty()) {
     if(recCharProcessed->getValue() == "0"){
@@ -231,6 +238,7 @@ void t2BLECallback(){
     else{
       BLEData *data = BLEQueue.shift();
       recCharProcessed->setValue("0");
+      Serial.println("got here1");
       data->updateBLEChars();
       // delete data;
       Serial.println("Updated BLE Charac");
@@ -318,6 +326,8 @@ void onReceive(int packetSize) {
   
   lastLoRASenderID = (int)senderId;
 
+  Serial.printf("recipient ID :%u \n", recipientId );
+
   // if not the intended recipient, return
   if (recipientId != deviceId && recipientId != BROADCAST_ID){ //TODO check this condition
     Serial.printf("Received LoRa Packet but not this device's recipient ID: %x\n",recipientId);
@@ -372,6 +382,7 @@ void onReceive(int packetSize) {
         // Put message on BLE Queue
         BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude, longitude, incoming);
         BLEQueue.push(data);
+        Serial.println("got here");
         break;
       }
 
