@@ -33,13 +33,18 @@
 #define BUTTON 0
 #define LED 25
 
+
+#define LORA_OUTPUT_POWER 20
+// #define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_RFO
+#define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_PABOOST
+
 #define QUEUE_LEN_BLE   10
 #define QUEUE_LEN_LORA  20
 
 #define LORA_HEADER_SIZE 8
 
 // ID of this device to compare with recipientId for incoming messages
-byte deviceId = 0x02; // temporary for testing purposes
+byte deviceId = 0x01; // temporary for testing purposes
 
 uint32_t counter = 0; // temporary for testing purposes
 
@@ -117,6 +122,13 @@ void setup() {
   // enable OLED display, LoRa, UART serial, and PABOOST; set LoRa frequency band
   // note that this sets serial baudrate to 115200
   Heltec.begin(OLED_ENABLE, true, true, true, BAND);
+
+  //set LoRa power 
+  //if PA_BOOST antenna 2 to 20 dB
+  //if RFO antenna, -1 to 14 dB
+  LoRa.setTxPower(LORA_OUTPUT_POWER, LORA_OUTPUT_ANTENNA);
+
+
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_10);
 
