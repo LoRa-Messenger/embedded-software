@@ -14,7 +14,7 @@
 #include <LoRaMessage.h>
 
 // Set to 0 if GPS module is not connected
-#define GPS_MODULE_PRESENT 0
+#define GPS_MODULE_PRESENT 1
 #define RX_PIN_FOR_GPS 22
 #define TX_PIN_FOR_GPS 23
 
@@ -25,8 +25,8 @@
 #define BAND 915E6
 
 //McGill location
-#define DEFAULT_LATITUDE 45506152 // multiplied by 1,000,000
-#define DEFAULT_LONGITUDE -73576416// multiplied by 1,000,000
+#define DEFAULT_LATITUDE 45.506152
+#define DEFAULT_LONGITUDE -73.576416
 #define GPS_DATA_MULTIPLIER 1000000 // 1,000,000
 
 // pin IDs
@@ -49,9 +49,10 @@ byte deviceId = 0x01; // temporary for testing purposes
 uint32_t counter = 0; // temporary for testing purposes
 
 //GPS variables
-float lat = 28.5458,lon = 77.1703;
-uint32_t latitude = DEFAULT_LATITUDE; //latitude variable multiplied by 1 000 000
-uint32_t longitude = DEFAULT_LONGITUDE; //longitude variable multiplied by 1 000 000
+float latitudeFloat = (float)DEFAULT_LATITUDE;
+float longitudeFloat = (float)DEFAULT_LONGITUDE;
+double latitude = DEFAULT_LATITUDE;
+double longitude = DEFAULT_LONGITUDE;
 TinyGPS gps; // create gps object 
 bool gps_data_fixed;
 
@@ -252,7 +253,6 @@ void t2BLECallback(){
       recCharProcessed->setValue("0");
       Serial.println("got here1");
       data->updateBLEChars();
-      // delete data;
       Serial.println("Updated BLE Charac");
       BLESentPacketCounter++;
     }
@@ -270,17 +270,17 @@ void t3GPSCallback(){
     //Serial.print((char)inByte); //for debugging
     if(gps.encode(inByte)){// encode gps data
       gps_data_fixed = true;
-      gps.f_get_position(&lat,&lon); // get latitude and longitude 
-      Serial.printf("Latitude : %f, Longitude: %f \n",lat,lon);
-      //update our latitude and longitude
-      latitude = (uint32_t)(lat*GPS_DATA_MULTIPLIER);
-      longitude = (uint32_t)(lon*GPS_DATA_MULTIPLIER);
+      gps.f_get_position(&latitudeFloat,&longitudeFloat); // get latitude and longitude 
+      latitude = (double)latitudeFloat;
+      longitude = (double)longitudeFloat;
     }
     else{
       gps_data_fixed = false;
     }
   }
   if(!gps_data_fixed){
+    longitude = longitude + 0.001;
+    Serial.printf("Latitude : %f, Longitude: %f \n",latitude,longitude);
     Serial.println("GPS position not fixed yet. Should take less than a minute with clear sky");
   }
 }
@@ -392,9 +392,11 @@ void onReceive(int packetSize) {
         // LoRaQueue.push(packet);
 
         // Put message on BLE Queue
+        // BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, 1, 1, incoming);
         BLEData *data = new BLEData(recipientId, senderId, messageId, timestamp, latitude, longitude, incoming);
+        // Serial.println("got here0");
         BLEQueue.push(data);
-        Serial.println("got here");
+        // Serial.println("got here");
         break;
       }
 

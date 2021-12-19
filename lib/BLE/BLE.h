@@ -38,8 +38,8 @@ class BLEData {
 		byte senderId;
 		uint32_t messageId;
 		uint32_t timestamp;
-    uint32_t latitude;
-    uint32_t longitude;
+    double latitude; //have to use double because of float uses the FPU and causes a bug with interrupts
+    double longitude; //have to use double because of float uses the FPU and causes a bug with interrupts
     std::string text;
 	
 	public:
@@ -55,7 +55,7 @@ class BLEData {
          * @param text  
 		 */
 		BLEData(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, \
-                 const uint32_t latitude, const uint32_t longitude, const std::string text);
+                 double latitude, double longitude, const std::string text);
 		
 		/**
 		 * @brief updates the BLE Characteristics with this objects infos 
@@ -67,8 +67,8 @@ class BLEData {
     byte getSenderId();
     uint32_t getMessageId();
     uint32_t getTimestamp();
-    uint32_t getLatitude();
-    uint32_t getLongitude();
+    double getLatitude();
+    double getLongitude();
     std::string getText();
 
     //Setters
@@ -76,8 +76,8 @@ class BLEData {
     void setSenderId(byte senderId);
     void setMessageId(uint32_t messageId);
     void setTimestamp(uint32_t timestamp);
-    void setLatitude(uint32_t latitude);
-    void setLongitude(uint32_t longitude);
+    void setLatitude(double latitude);
+    void setLongitude(double longitude);
     void setText(std::string text);
 };
 

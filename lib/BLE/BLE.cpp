@@ -9,7 +9,7 @@ BLECharacteristic *senCharSendID, *senCharRecID, *senCharMesID, *senCharText, *s
 
 //class for queue
 BLEData::BLEData(const byte recipientId, const byte senderId, const uint32_t messageId, const uint32_t timestamp, \
-                 const uint32_t latitude, const uint32_t longitude, const std::string text) {
+                 double latitude, double longitude, const std::string text) {
   this->recipientId = recipientId;
   this->senderId = senderId;
   this->messageId = messageId;
@@ -24,8 +24,8 @@ byte BLEData::getRecipientId() {return this->recipientId;}
 byte BLEData::getSenderId() {return this->senderId;}
 uint32_t BLEData::getMessageId() {return this->messageId;}
 uint32_t BLEData::getTimestamp() {return this->timestamp;}
-uint32_t BLEData::getLatitude() {return this->latitude;}
-uint32_t BLEData::getLongitude() {return this->longitude;}
+double BLEData::getLatitude() {return this->latitude;}
+double BLEData::getLongitude() {return this->longitude;}
 std::string BLEData::getText() {return this->text;}
 
 //Setters
@@ -33,8 +33,8 @@ void BLEData::setRecipientId(byte recipientId) {this->recipientId = recipientId;
 void BLEData::setSenderId(byte senderId) {this->senderId = senderId;}
 void BLEData::setMessageId(uint32_t messageId) {this->messageId = messageId;}
 void BLEData::setTimestamp(uint32_t timestamp) {this->timestamp = timestamp;}
-void BLEData::setLatitude(uint32_t latitude) {this->latitude = latitude;}
-void BLEData::setLongitude(uint32_t longitude) {this->longitude = longitude;}
+void BLEData::setLatitude(double latitude) {this->latitude = latitude;}
+void BLEData::setLongitude(double longitude) {this->longitude = longitude;}
 void BLEData::setText(std::string text) {this->text = text;}
 
 void BLEData::updateBLEChars(){
@@ -42,14 +42,16 @@ void BLEData::updateBLEChars(){
   uint16_t senderID_uint16 = (0 << 8) | ((uint8_t)this->senderId);
   recCharSendID->setValue(senderID_uint16);
   // recCharRecID->setValue((uint32_t&)this->senderId);
-  recCharTime->setValue(this->timestamp);
-  Serial.printf("Time: %u\n",this->timestamp);
-  // recCharLat->setValue(this->latitude);
-  // recCharLong->setValue(this->longitude);
+  // recCharTime->setValue(this->timestamp);
+  // Serial.printf("Time: %u\n",this->timestamp);
+  // Serial.printf("Got here updateBLEChar\n");
+  //might have
+  recCharLat->setValue(this->latitude);
+  recCharLong->setValue(this->longitude);
   recCharText->setValue(this->text);
   recCharMesID->setValue(this->messageId);
   recCharMesID->notify();
-  Serial.println("got here0");
+  // Serial.println("got here0");
 }
 
 
@@ -114,9 +116,9 @@ void BLEConfig(){
   recCharSendID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_SEN_ID, BLECharacteristic::PROPERTY_READ |BLECharacteristic::PROPERTY_NOTIFY);
   // recCharRecID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_REC_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   recCharMesID = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_MES_ID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  recCharTime = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TIME, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  // recCharLat = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LAT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
-  // recCharLong = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LONG, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  // recCharTime = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_TIME, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  recCharLat = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LAT, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  recCharLong = receiveService->createCharacteristic(REC_CHARACTERISTIC_UUID_LONG, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
 
   //set default values
   // senCharSendID->setValue(DEFAULT_ID);
@@ -131,9 +133,9 @@ void BLEConfig(){
   // recCharRecID->setValue(DEFAULT_ID);
   recCharMesID->setValue(DEFAULT_ID);
   recCharMesID->addDescriptor(new BLE2902());
-  recCharTime->setValue(DEFAULT_TIME);
-  // recCharLat->setValue(DEFAULT_LAT);
-  // recCharLong->setValue(DEFAULT_LONG);
+  // recCharTime->setValue(DEFAULT_TIME);
+  recCharLat->setValue(DEFAULT_LAT);
+  recCharLong->setValue(DEFAULT_LONG);
 
 
   //set callback for message ID
