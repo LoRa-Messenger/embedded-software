@@ -13,13 +13,19 @@
 #include <BLE.h>
 #include <LoRaMessage.h>
 
-// Set to 0 if GPS module is not connected
-#define GPS_MODULE_PRESENT 1
-#define RX_PIN_FOR_GPS 22
-#define TX_PIN_FOR_GPS 23
+#define LORA_OUTPUT_POWER 20
+// #define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_RFO
+#define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_PABOOST
 
-//enable or not the OLED and it's corresponding thread
+//set to a different number of every board
+#define DEVICE_ID 0x1 
+
+//enable different modules and their threads here
+#define LORA_ENABLE 1
+#define BLE_ENABLE 1
 #define OLED_ENABLE 1
+#define GPS_ENABLE 1
+
 
 // LoRa frequency band = 915 MHz
 #define BAND 915E6
@@ -33,18 +39,16 @@
 #define BUTTON 0
 #define LED 25
 
-
-#define LORA_OUTPUT_POWER 20
-// #define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_RFO
-#define LORA_OUTPUT_ANTENNA RF_PACONFIG_PASELECT_PABOOST
-
 #define QUEUE_LEN_BLE   10
 #define QUEUE_LEN_LORA  20
 
 #define LORA_HEADER_SIZE 8
 
+#define RX_PIN_FOR_GPS 22
+#define TX_PIN_FOR_GPS 23
+
 // ID of this device to compare with recipientId for incoming messages
-byte deviceId = 0x01; // temporary for testing purposes
+byte deviceId = DEVICE_ID; // temporary for testing purposes
 
 uint32_t counter = 0; // temporary for testing purposes
 
@@ -107,68 +111,71 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE Server!");
 
-  //BLE setup
-  BLEConfig();
-
-  //start advertising
-  BLEAdvertise();
-
   // setup the pins
   pinMode(BUTTON, INPUT);
   pinMode(LED, OUTPUT);
-
   // register the pushbutton ISR
   attachInterrupt(digitalPinToInterrupt(BUTTON), onButtonPress, RISING);
-
-  // enable OLED display, LoRa, UART serial, and PABOOST; set LoRa frequency band
-  // note that this sets serial baudrate to 115200
-  Heltec.begin(OLED_ENABLE, true, true, true, BAND);
-
-  //set LoRa power 
-  //if PA_BOOST antenna 2 to 20 dB
-  //if RFO antenna, -1 to 14 dB
-  LoRa.setTxPower(LORA_OUTPUT_POWER, LORA_OUTPUT_ANTENNA);
-
-
-  Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
-  Heltec.display->setFont(ArialMT_Plain_10);
 
   //Task Scheduler
   runner.init();
   Serial.println("Initialized scheduler");
-  
-  runner.addTask(t1LoRa);
-  runner.addTask(t2BLE);
 
-  t1LoRa.enable();
-  Serial.println("Enabled t1LoRa task");
-  t2BLE.enable();
-  Serial.println("Enabled t2BLE task");
+  if(LORA_ENABLE){
+    // enable OLED display, LoRa, UART serial, and PABOOST; set LoRa frequency band
+    // note that this sets serial baudrate to 115200
+    Heltec.begin(OLED_ENABLE, true, true, true, BAND);
+
+    //set LoRa power 
+    //if PA_BOOST antenna 2 to 20 dB
+    //if RFO antenna, -1 to 14 dB
+    LoRa.setTxPower(LORA_OUTPUT_POWER, LORA_OUTPUT_ANTENNA);
+
+    Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+    Heltec.display->setFont(ArialMT_Plain_10);
+    
+    //Lora Thread
+    runner.addTask(t1LoRa);
+    t1LoRa.enable();
+    Serial.println("Enabled t1LoRa task");
+
+      //LoRa
+    // register the receive callback
+    LoRa.onReceive(onReceive);
+
+    // put the radio into receive mode
+    LoRa.receive();
+  }
+
+  if (BLE_ENABLE){
+    //BLE setup
+    BLEConfig();
+
+    //start advertising
+    BLEAdvertise();
+
+    //add thread
+    runner.addTask(t2BLE);
+    t2BLE.enable();
+    Serial.println("Enabled t2BLE task");
+  }
+
 
   //GPS module
-  if(GPS_MODULE_PRESENT){
+  if(GPS_ENABLE){
     Serial2.begin(9600, SERIAL_8N1, RX_PIN_FOR_GPS, TX_PIN_FOR_GPS);
     runner.addTask(t3GPS);
     t3GPS.enable();
     Serial.println("Enabled t3GPS task");
   }
 
-  //GPS module
+  //OLED module
   if(OLED_ENABLE){
     runner.addTask(t4OLED);
     t4OLED.enable();
     Serial.println("Enabled t4OLED task");
   }
   
-
-
-
-  //LoRa
-  // register the receive callback
-  LoRa.onReceive(onReceive);
-
-  // put the radio into receive mode
-  LoRa.receive();
 }
 
 void loop() {
